@@ -109,7 +109,9 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - mantido também o favicon SVG já existente.
 
 
-## Ajuste v4.4.5
-- removidas as frases do topo do palco animado: “Em cena”, “Cada habilidade entra em movimento.” e “Um personagem por vez cruza o espaço, apresenta sua pergunta-chave e segue a jornada.”;
-- mantida a animação dos personagens e os balões individuais de pensamento;
-- ajustado o espaçamento do palco para ocupar melhor a área da galeria.
+## Ajuste v4.4.4.2
+- base restabelecida diretamente da versão v4.4.4;
+- texto “Cada habilidade entra em movimento.” alterado para “As habilidades tem uma mensagem para você”;
+- frase “Um personagem por vez cruza o espaço, apresenta sua pergunta-chave e segue a jornada.” removida visualmente;
+- preservada a linha/altura original do bloco para não alterar proporção do palco;
+- sem alteração em CSS, JS, animação, tamanho do palco ou assets.
