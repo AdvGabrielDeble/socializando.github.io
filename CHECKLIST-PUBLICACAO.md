@@ -8,3 +8,8 @@
 - [ ] Conferir responsividade no celular
 - [ ] Validar se a hierarquia visual ficou de acordo com o projeto
 - [ ] Confirmar publicação dos arquivos da pasta completa
+
+
+## Atualização desta versão
+- Galeria reorganizada em grid controlado.
+- Espaço reservado oficialmente para animação sequencial dos personagens com balões de pensamento.
