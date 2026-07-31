@@ -101,3 +101,9 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - não foi encontrado um asset pronto do termômetro da Viva entre os arquivos disponíveis;
 - por isso, foi criada e inserida uma versão limpa do termômetro no sprite especial da personagem Viva;
 - o objeto passa a aparecer na animação de exposição da habilidade, alinhado ao padrão dos demais personagens.
+
+
+## Ajuste v4.4.4
+- configurado favicon com o logo do projeto;
+- adicionados arquivos favicon em PNG e ICO para melhorar compatibilidade entre navegadores;
+- mantido também o favicon SVG já existente.
