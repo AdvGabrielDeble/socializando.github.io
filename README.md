@@ -115,3 +115,15 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - frase “Um personagem por vez cruza o espaço, apresenta sua pergunta-chave e segue a jornada.” removida visualmente;
 - preservada a linha/altura original do bloco para não alterar proporção do palco;
 - sem alteração em CSS, JS, animação, tamanho do palco ou assets.
+
+
+## Ajuste v4.4.4.4
+- correção feita a partir da versão v4.4.4.2;
+- removidos integralmente os textos da seção de dúvidas: “As informações iniciais ficam claras. Os detalhes ficam para o WhatsApp.” e “A página apresenta a ideia do projeto. Informações sobre grupos, idades, datas e valores ficam concentradas no atendimento direto.”;
+- mantido em destaque apenas “Dúvidas comuns” como título da seção;
+- conferido no arquivo final que os textos removidos não permanecem no index.html.
+
+
+## Ajuste v4.4.4.5
+- na pergunta “Existe divisão por idade?”, a resposta foi alterada para: “A composição dos grupos depende da maturidade dos participantes.”;
+- sem alteração em layout, CSS, JS, animação, palco ou assets.
