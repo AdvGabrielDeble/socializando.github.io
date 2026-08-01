@@ -127,3 +127,16 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 ## Ajuste v4.4.4.5
 - na pergunta “Existe divisão por idade?”, a resposta foi alterada para: “A composição dos grupos depende da maturidade dos participantes.”;
 - sem alteração em layout, CSS, JS, animação, palco ou assets.
+
+
+## Ajuste v4.5.0 — SEO e indexação
+
+- pacote técnico inicial para indexação e compartilhamento;
+- domínio canônico configurado para `https://www.projetosocializando.com.br/`;
+- `title` e `description` otimizados para Socializando, Bagé e habilidades socioemocionais;
+- adicionadas tags Open Graph/Twitter Card;
+- criada imagem `assets/socializando-og.png` para compartilhamento;
+- adicionados dados estruturados JSON-LD: Organization, WebSite, WebPage e FAQPage;
+- `robots.txt` e `sitemap.xml` atualizados;
+- adicionado `CNAME` para GitHub Pages;
+- criado `SEO-SEARCH-CONSOLE.md` com próximos passos.
