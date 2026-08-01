@@ -140,3 +140,13 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - `robots.txt` e `sitemap.xml` atualizados;
 - adicionado `CNAME` para GitHub Pages;
 - criado `SEO-SEARCH-CONSOLE.md` com próximos passos.
+
+
+## Ajuste v4.5.1 — SEO: páginas internas
+
+- criadas 8 páginas internas de ranqueamento;
+- atualizado `sitemap.xml` com as novas URLs;
+- criado `seo-pages.css` para as páginas internas e links do rodapé;
+- página inicial recebeu apenas links internos no rodapé, para evitar páginas órfãs;
+- dados estruturados reforçados com `LocalBusiness`, `WebPage`, `BreadcrumbList` e `FAQPage`;
+- mantidos assets, animação principal, WhatsApp e design-base da LP.

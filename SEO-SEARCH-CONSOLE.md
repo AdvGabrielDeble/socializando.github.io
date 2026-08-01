@@ -47,3 +47,49 @@ Esta é uma primeira camada técnica. Para disputar buscas além da marca, o pr�
 - `/habilidades-socioemocionais-para-criancas/`
 - `/habilidades-socioemocionais-para-adolescentes/`
 - `/socializando-bage/`
+
+
+---
+
+# SEO v4.5.1 — Páginas internas de ranqueamento
+
+## Páginas criadas
+
+- https://www.projetosocializando.com.br/socializando-bage/
+- https://www.projetosocializando.com.br/habilidades-socioemocionais-para-criancas/
+- https://www.projetosocializando.com.br/habilidades-socioemocionais-para-adolescentes/
+- https://www.projetosocializando.com.br/autoconsciencia/
+- https://www.projetosocializando.com.br/autogestao/
+- https://www.projetosocializando.com.br/consciencia-social/
+- https://www.projetosocializando.com.br/habilidades-de-relacionamento/
+- https://www.projetosocializando.com.br/tomada-de-decisao-responsavel/
+
+## Depois de publicar
+
+1. Enviar novamente o sitemap no Search Console:
+   https://www.projetosocializando.com.br/sitemap.xml
+
+2. Inspecionar manualmente estas três URLs prioritárias:
+   - https://www.projetosocializando.com.br/
+   - https://www.projetosocializando.com.br/socializando-bage/
+   - https://www.projetosocializando.com.br/habilidades-socioemocionais-para-criancas/
+
+3. Solicitar indexação das URLs prioritárias.
+
+4. Aguardar dados reais de impressões e consultas por 7 a 14 dias.
+
+## Ordem de prioridade de ranqueamento
+
+1. Socializando Bagé
+2. habilidades socioemocionais Bagé
+3. habilidades socioemocionais para crianças
+4. habilidades socioemocionais para adolescentes
+5. autoconsciência infantil
+6. autogestão emocional infantil
+7. consciência social crianças
+8. habilidades de relacionamento crianças
+9. tomada de decisão responsável crianças
+
+## Observação
+
+As páginas internas foram criadas para evitar que o site dependa apenas da página inicial. A página inicial recebeu links internos no rodapé para que as novas páginas não fiquem órfãs.
