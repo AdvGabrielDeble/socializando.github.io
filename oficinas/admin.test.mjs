@@ -139,3 +139,15 @@ test('magic-link callback session is read from URL hash without exposing it in t
   });
   assert.equal(readMagicLinkSession('#error=access_denied'), null);
 });
+
+
+test('admin data API never falls back to the publishable key as Bearer', async () => {
+  let called = false;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async () => { called = true; return { ok:true, status:200, async json(){ return []; } }; },
+  });
+
+  await assert.rejects(() => api.listWorkshops(''), /sessão administrativa inválida/i);
+  assert.equal(called, false);
+});
