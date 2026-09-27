@@ -984,8 +984,8 @@ details p {
 }
 .workshop-card__art {
   width: 100%;
-  aspect-ratio: 4 / 4.5;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   background: var(--purple-200);
 }
 .workshop-card__body { padding: 26px; }
