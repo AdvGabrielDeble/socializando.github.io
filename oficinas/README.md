@@ -47,8 +47,8 @@ Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no c�
 
 ## Dados operacionais já aprovados
 
-- Expedição Jurássica — 10/10/2026, 14h às 15h30, R$ 50,00, a partir de 5 anos, 15 vagas.
-- Fábrica dos Squishy Mágicos — 10/10/2026, 15h30 às 17h, R$ 50,00, a partir de 5 anos, 15 vagas.
+- Expedição Jurássica — 10/10/2026, 14h às 15h30, R$ 45,00, a partir de 5 anos, 15 vagas.
+- Fábrica dos Squishy Mágicos — 10/10/2026, 15h30 às 17h, R$ 45,00, a partir de 5 anos, 15 vagas.
 - Chave Pix CNPJ: `59.380.867/0001-62`.
 - WhatsApp oficial: `+55 53 99951-9569`.
 
