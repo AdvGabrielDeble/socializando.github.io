@@ -91,3 +91,17 @@ As artes aprovadas não são tratadas como miniaturas ou JPGs decorativos. O fro
 - quando uma nova turma ainda não possui arte específica, o sistema exibe somente um estado visual institucional neutro, sem fabricar ou alterar a criação existente.
 
 A transferência dos dois JPEGs canônicos para `assets/oficinas/` continua condicionada à preservação byte a byte dos hashes registrados em `artwork-manifest.json`.
+
+
+## Acesso administrativo passwordless
+
+O primeiro acesso aprovado é `gabrieldeblegd@gmail.com`. A autorização real é feita no banco por `admin_emails` e pelo e-mail presente no JWT emitido pelo Supabase Auth; não há senha administrativa armazenada no repositório.
+
+Fluxo:
+1. abrir `/oficinas/admin.html`;
+2. solicitar o link de acesso;
+3. o Supabase envia um Magic Link ao e-mail autorizado;
+4. ao retornar para `https://www.projetosocializando.com.br/oficinas/admin.html`, o token é capturado e removido imediatamente da URL;
+5. as políticas RLS só liberam o painel se o e-mail autenticado constar na allowlist administrativa.
+
+Antes da publicação final, o Supabase Auth precisa ter a URL acima cadastrada em **Authentication → URL Configuration → Redirect URLs**. Essa configuração é externa ao schema PostgreSQL e não deve ser simulada no código.
