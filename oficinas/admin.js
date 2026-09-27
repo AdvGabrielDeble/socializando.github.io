@@ -62,21 +62,6 @@ export function buildPublicArtworkUrl(supabaseUrl, storagePath) {
 }
 
 
-export function readMagicLinkSession(hash = '') {
-  const raw = String(hash || '').replace(/^#/, '');
-  if (!raw) return null;
-  const params = new URLSearchParams(raw);
-  const accessToken = params.get('access_token');
-  if (!accessToken) return null;
-  return {
-    accessToken,
-    refreshToken: params.get('refresh_token') || '',
-    expiresIn: Number(params.get('expires_in') || 0),
-    tokenType: params.get('token_type') || 'bearer',
-    type: params.get('type') || '',
-  };
-}
-
 async function sha256File(file) {
   if (!globalThis.crypto?.subtle) throw new Error('Seu navegador não suporta a validação segura da arte.');
   const bytes = await file.arrayBuffer();
@@ -243,19 +228,40 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
   };
 
   return {
-    async requestMagicLink(email, redirectTo) {
-      const normalizedEmail = String(email || '').trim().toLowerCase();
-      if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('E-mail administrativo inválido.');
-      const redirect = String(redirectTo || '').trim();
-      if (!redirect) throw new Error('URL de retorno administrativo indisponível.');
+    async signInWithPassword(username, password) {
+      const normalizedUsername = String(username || '').trim().toUpperCase();
+      const secret = String(password || '');
+      if (normalizedUsername !== 'SOCIALIZANDO' || !secret) {
+        throw new Error('Usuário ou senha inválidos.');
+      }
 
-      const response = await fetchImpl(`${url}/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, {
+      const response = await fetchImpl(`${url}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: { apikey: anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: normalizedEmail,
-          create_user: true,
+          email: 'gabrieldeblegd@gmail.com',
+          password: secret,
         }),
+      });
+      return parse(response);
+    },
+    async refreshSession(refreshToken) {
+      const sessionRefreshToken = String(refreshToken || '').trim();
+      if (!sessionRefreshToken) throw new Error('Sessão administrativa expirada.');
+
+      const response = await fetchImpl(`${url}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: sessionRefreshToken }),
+      });
+      return parse(response);
+    },
+    async signOut(token) {
+      const sessionToken = String(token || '').trim();
+      if (!sessionToken) return { ok: true };
+      const response = await fetchImpl(`${url}/auth/v1/logout`, {
+        method: 'POST',
+        headers: authHeaders(sessionToken),
       });
       await parse(response);
       return { ok: true };
@@ -326,33 +332,39 @@ async function initAdmin() {
     return;
   }
 
-  let token;
-  const callbackSession = readMagicLinkSession(globalThis.location?.hash || '');
-  if (callbackSession?.accessToken) {
-    sessionStorage.setItem('socializando-admin-token', callbackSession.accessToken);
-    sessionStorage.setItem('socializando-admin-refresh-token', callbackSession.refreshToken || '');
-    token = callbackSession.accessToken;
-    if (globalThis.history?.replaceState && globalThis.location) {
-      globalThis.history.replaceState(null, '', globalThis.location.pathname + globalThis.location.search);
+  let token = sessionStorage.getItem('socializando-admin-token');
+  let refreshToken = sessionStorage.getItem('socializando-admin-refresh-token');
+
+  if (refreshToken) {
+    try {
+      const session = await api.refreshSession(refreshToken);
+      token = session?.access_token || '';
+      refreshToken = session?.refresh_token || refreshToken;
+      if (!token) throw new Error('Sessão administrativa inválida.');
+      sessionStorage.setItem('socializando-admin-token', token);
+      sessionStorage.setItem('socializando-admin-refresh-token', refreshToken);
+    } catch {
+      sessionStorage.removeItem('socializando-admin-token');
+      sessionStorage.removeItem('socializando-admin-refresh-token');
+      token = null;
+      refreshToken = null;
     }
-  } else {
-    token = sessionStorage.getItem('socializando-admin-token');
   }
 
   let workshops = [];
   let registrations = [];
   let auditLog = [];
 
-  const renderLogin = (message = '') => {
+  const renderLogin = () => {
     root.innerHTML = `
       <section class="admin-login">
         <img src="../assets/logo-wordmark-large.png" alt="Socializando" />
         <h1>Gestão de oficinas</h1>
-        <p>Acesso restrito à equipe. O login é feito por link seguro enviado ao e-mail autorizado.</p>
+        <p>Acesso restrito à equipe administrativa.</p>
         <form data-login-form>
-          <label>E-mail<input name="email" type="email" required autocomplete="email" value="gabrieldeblegd@gmail.com" readonly /></label>
-          <button type="submit">Enviar link de acesso</button>
-          <p class="admin-login__success" data-login-success ${message ? '' : 'hidden'}>${esc(message)}</p>
+          <label>Usuário<input name="username" type="text" required autocomplete="username" autocapitalize="characters" spellcheck="false" /></label>
+          <label>Senha<input name="password" type="password" required autocomplete="current-password" /></label>
+          <button type="submit">Entrar</button>
           <p data-login-error hidden></p>
         </form>
       </section>`;
@@ -361,17 +373,26 @@ async function initAdmin() {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       const errorNode = root.querySelector('[data-login-error]');
-      const successNode = root.querySelector('[data-login-success]');
+      const submitButton = event.currentTarget.querySelector('button[type="submit"]');
       errorNode.hidden = true;
-      successNode.hidden = true;
+      submitButton.disabled = true;
+      submitButton.textContent = 'Entrando...';
       try {
-        const redirectTo = 'https://www.projetosocializando.com.br/oficinas/admin.html';
-        await api.requestMagicLink(data.get('email'), redirectTo);
-        successNode.textContent = 'Link de acesso enviado. Abra o e-mail e clique no link para entrar.';
-        successNode.hidden = false;
+        const session = await api.signInWithPassword(data.get('username'), data.get('password'));
+        token = session?.access_token || '';
+        refreshToken = session?.refresh_token || '';
+        if (!token || !refreshToken) throw new Error('Não foi possível iniciar a sessão administrativa.');
+        sessionStorage.setItem('socializando-admin-token', token);
+        sessionStorage.setItem('socializando-admin-refresh-token', refreshToken);
+        event.currentTarget.reset();
+        await loadDashboard();
       } catch (error) {
-        errorNode.textContent = error.message;
+        errorNode.textContent = error.message === 'Invalid login credentials'
+          ? 'Usuário ou senha inválidos.'
+          : error.message;
         errorNode.hidden = false;
+        submitButton.disabled = false;
+        submitButton.textContent = 'Entrar';
       }
     });
   };
@@ -405,7 +426,7 @@ async function initAdmin() {
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.7.0</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.0</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
@@ -576,10 +597,12 @@ async function initAdmin() {
         </section>
       </main>`;
 
-    root.querySelector('[data-logout]').addEventListener('click', () => {
+    root.querySelector('[data-logout]').addEventListener('click', async () => {
+      try { await api.signOut(token); } catch { /* sessão local será encerrada mesmo assim */ }
       sessionStorage.removeItem('socializando-admin-token');
       sessionStorage.removeItem('socializando-admin-refresh-token');
       token = null;
+      refreshToken = null;
       renderLogin();
     });
 
