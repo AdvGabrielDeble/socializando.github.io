@@ -59,3 +59,11 @@ test('PL/pgSQL output names do not collide with registration status columns', ()
   assert.match(createFn, /from\s+public\.registrations\s+r[\s\S]*?r\.status\s*=\s*'confirmed'/i);
   assert.match(reportFn, /update\s+public\.registrations\s+as\s+r[\s\S]*?r\.status\s*=\s*'pending_payment'/i);
 });
+
+
+test('public workshop SQL function uses a valid tagged dollar quote', () => {
+  const fn = sql.match(/create\s+or\s+replace\s+function\s+public\.list_public_workshops[\s\S]*?(?=create\s+or\s+replace\s+function\s+public\.prevent_overbooking)/i)?.[0] || '';
+  assert.match(fn, /as\s+\$sql\$/i);
+  assert.match(fn, /\$sql\$;/i);
+  assert.doesNotMatch(fn, /as\s+\$\s*\n/i);
+});
