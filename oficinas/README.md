@@ -1,11 +1,12 @@
 # Socializando — Módulo de Oficinas v4.6.0
 
-Este diretório concentra exclusivamente o módulo de gestão de vagas e inscrições em oficinas.
+Este diretório concentra exclusivamente o módulo de gestão de vagas e inscrições em oficinas. Cada registro de `workshops` representa uma turma/sessão concreta; turmas da mesma experiência são agrupadas por `experience_key`, permitindo abrir uma segunda turma em outra data sem duplicar o conceito visual da oficina.
 
 ## Escopo fechado
 
 - preservar integralmente o design-base da LP atual;
-- exibir oficinas abertas e vagas disponíveis;
+- exibir oficinas abertas, suas turmas/datas e vagas disponíveis;
+- permitir múltiplas turmas da mesma oficina em datas distintas, cada uma com capacidade e contador próprios;
 - cadastrar responsável e criança;
 - gerar Pix direto para a chave do Socializando;
 - após o pagamento, a inscrição fica como `payment_reported`;
@@ -40,7 +41,7 @@ Antes de conectar o módulo à LP publicada, ainda são necessários:
 - URL do projeto Supabase;
 - chave pública `anon` do Supabase;
 - chave Pix oficial;
-- dados da primeira oficina (nome, data, horário, valor e capacidade).
+- dados das turmas adicionais quando forem abertas; a primeira rodada já está definida.
 
 Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no código.
 
