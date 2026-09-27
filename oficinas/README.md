@@ -71,7 +71,7 @@ As artes aprovadas atuais são datadas. Por isso, uma nova turma em outra data *
 
 ## Artes canônicas
 
-Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest.json`. As imagens devem ser transferidas byte a byte para os caminhos indicados, sem edição, recorte, recompressão ou conversão. A transferência binária dos dois PNGs atualizados para o repositório é a etapa pendente antes de vincular os `image_url` reais no banco.
+Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest.json`. As imagens devem ser transferidas byte a byte para os caminhos indicados, sem edição, recorte, recompressão ou conversão. Os dois PNGs atualizados já estão no repositório e os `image_url` das turmas iniciais apontam para esses assets canônicos.
 
 ## Regra de publicação
 
@@ -90,7 +90,7 @@ As artes aprovadas não são tratadas como miniaturas ou JPGs decorativos. O fro
 - múltiplas turmas permanecem dentro da mesma experiência, mas cada turma conserva seu próprio `image_url`; uma arte com data impressa nunca é reutilizada automaticamente para outra data;
 - quando uma nova turma ainda não possui arte específica, o sistema exibe somente um estado visual institucional neutro, sem fabricar ou alterar a criação existente.
 
-A transferência dos dois PNGs canônicos para `assets/oficinas/` continua condicionada à preservação byte a byte dos hashes registrados em `artwork-manifest.json`.
+Os dois PNGs canônicos estão em `assets/oficinas/` e foram montados com validação SHA-256 contra os hashes registrados em `artwork-manifest.json`.
 
 
 ## Acesso administrativo passwordless
