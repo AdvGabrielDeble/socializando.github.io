@@ -244,9 +244,9 @@ declare
   v_token uuid := gen_random_uuid();
   v_reference text;
 begin
-  select * into v_workshop
-  from public.workshops
-  where id = p_workshop_id and status = 'open';
+  select w.* into v_workshop
+  from public.workshops w
+  where w.id = p_workshop_id and w.status = 'open';
 
   if not found then
     raise exception 'Oficina indisponível para inscrição';
@@ -266,8 +266,8 @@ begin
   end if;
 
   if (
-    select count(*) from public.registrations
-    where workshop_id = p_workshop_id and status = 'confirmed'
+    select count(*) from public.registrations r
+    where r.workshop_id = p_workshop_id and r.status = 'confirmed'
   ) >= v_workshop.capacity then
     raise exception 'Oficina sem vagas disponíveis';
   end if;
@@ -301,13 +301,13 @@ security definer
 set search_path = public
 as $$
 begin
-  update public.registrations
+  update public.registrations as r
   set status = 'payment_reported',
-      payment_reported_at = coalesce(registrations.payment_reported_at, now()),
+      payment_reported_at = coalesce(r.payment_reported_at, now()),
       updated_at = now()
-  where id = p_registration_id
-    and public_token = p_public_token
-    and status = 'pending_payment';
+  where r.id = p_registration_id
+    and r.public_token = p_public_token
+    and r.status = 'pending_payment';
 
   if not exists (
     select 1 from public.registrations
