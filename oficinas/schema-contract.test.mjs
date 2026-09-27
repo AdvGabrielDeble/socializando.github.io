@@ -56,7 +56,7 @@ test('authenticated admin has table privileges needed by the panel while anon do
 test('PL/pgSQL output names do not collide with registration status columns', () => {
   const createFn = sql.match(/create\s+or\s+replace\s+function\s+public\.create_public_registration[\s\S]*?\$\$;/i)?.[0] || '';
   const reportFn = sql.match(/create\s+or\s+replace\s+function\s+public\.report_public_payment[\s\S]*?\$\$;/i)?.[0] || '';
-  assert.match(createFn, /from\s+public\.registrations\s+r[\s\S]*?r\.status\s*=\s*'confirmed'/i);
+  assert.match(createFn, /from\s+public\.registrations\s+r[\s\S]*?r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
   assert.match(reportFn, /update\s+public\.registrations\s+as\s+r[\s\S]*?r\.status\s*=\s*'pending_payment'/i);
 });
 
