@@ -149,3 +149,22 @@ test('workshop availability view preserves its existing column contract during m
   assert.match(view, /confirmed_count[\s\S]*?available_spots/i);
   assert.doesNotMatch(view, /confirmed_count[\s\S]*?occupied_count[\s\S]*?available_spots/i);
 });
+
+
+test('admin audit log records workshop and registration status changes without exposing it publicly', () => {
+  assert.match(sql, /create\s+table\s+if\s+not\s+exists\s+public\.admin_audit_log/i);
+  assert.match(sql, /actor_user_id\s+uuid/i);
+  assert.match(sql, /actor_email\s+text/i);
+  assert.match(sql, /entity_type\s+text/i);
+  assert.match(sql, /entity_id\s+uuid/i);
+  assert.match(sql, /action\s+text/i);
+  assert.match(sql, /details\s+jsonb/i);
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.audit_workshop_admin_change/i);
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.audit_registration_admin_change/i);
+  assert.match(sql, /create\s+trigger\s+workshops_admin_audit/i);
+  assert.match(sql, /create\s+trigger\s+registrations_admin_audit/i);
+  assert.match(sql, /alter\s+table\s+public\.admin_audit_log\s+enable\s+row\s+level\s+security/i);
+  assert.match(sql, /create\s+policy\s+"admins can read audit log"[\s\S]*?to\s+authenticated[\s\S]*?is_workshop_admin/i);
+  assert.match(sql, /grant\s+select\s+on\s+public\.admin_audit_log\s+to\s+authenticated/i);
+  assert.doesNotMatch(sql, /grant\s+select\s+on\s+public\.admin_audit_log\s+to\s+anon/i);
+});
