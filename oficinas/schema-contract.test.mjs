@@ -43,3 +43,11 @@ test('public availability is exposed by safe RPC without registration table acce
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.list_public_workshops\(\)\s+to\s+anon/i);
   assert.doesNotMatch(sql, /grant\s+select\s+on\s+public\.workshop_availability\s+to\s+anon/i);
 });
+
+
+test('authenticated admin has table privileges needed by the panel while anon does not', () => {
+  assert.match(sql, /grant\s+select\s*,\s*insert\s*,\s*update\s+on\s+public\.workshops\s+to\s+authenticated/i);
+  assert.match(sql, /grant\s+select\s*,\s*update\s+on\s+public\.registrations\s+to\s+authenticated/i);
+  assert.match(sql, /revoke\s+all\s+on\s+public\.registrations\s+from\s+anon/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.is_workshop_admin\(\)\s+from\s+public/i);
+});
