@@ -430,7 +430,7 @@ async function initAdmin() {
               <label>Início<input name="startTime" type="time" required /></label>
               <label>Fim<input name="endTime" type="time" required /></label>
               <label>Idade mínima<input name="minimumAge" type="number" min="0" value="5" required /></label>
-              <label>Valor (R$)<input name="priceReais" inputmode="decimal" value="50,00" required /></label>
+              <label>Valor (R$)<input name="priceReais" inputmode="decimal" value="45,00" required /></label>
               <label>Vagas<input name="capacity" type="number" min="1" value="15" required /></label>
               <button type="submit">Criar nova oficina</button>
               <p data-workshop-create-error hidden></p>

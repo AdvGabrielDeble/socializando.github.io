@@ -65,7 +65,7 @@ insert into public.workshops (
   '15:30',
   5,
   'A partir de 5 anos',
-  5000,
+  4500,
   15,
   'open',
   '/assets/oficinas/expedicao-jurassica-2026-10-10.png'
@@ -80,7 +80,7 @@ insert into public.workshops (
   '17:00',
   5,
   'A partir de 5 anos',
-  5000,
+  4500,
   15,
   'open',
   '/assets/oficinas/fabrica-squishy-magicos-2026-10-10.png'
