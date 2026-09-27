@@ -2,6 +2,15 @@
 -- Cada linha representa uma turma concreta. Novas datas da mesma oficina
 -- reutilizam a mesma experience_key e recebem slug próprio.
 
+-- migração de nomenclatura Squishy aprovada em 27/09/2026.
+update public.workshops
+set experience_key = 'fabrica-dos-squishy-magicos',
+    slug = 'fabrica-dos-squishy-magicos-2026-10-10',
+    title = 'Fábrica dos Squishy Mágicos',
+    short_description = 'Oficina de Paper Squishy especial do Dia das Crianças.',
+    updated_at = now()
+where slug = 'fabrica-dos-squishy-magicos-2026-10-10';
+
 insert into public.workshops (
   experience_key,
   slug,
@@ -33,10 +42,10 @@ insert into public.workshops (
   null
 ),
 (
-  'fabrica-dos-squishs-magicos',
-  'fabrica-dos-squishs-magicos-2026-10-10',
-  'Fábrica dos Squishs Mágicos',
-  'Oficina de Paper Squish especial do Dia das Crianças.',
+  'fabrica-dos-squishy-magicos',
+  'fabrica-dos-squishy-magicos-2026-10-10',
+  'Fábrica dos Squishy Mágicos',
+  'Oficina de Paper Squishy especial do Dia das Crianças.',
   '2026-10-10',
   '15:30',
   '17:00',
