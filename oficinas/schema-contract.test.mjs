@@ -168,3 +168,15 @@ test('admin audit log records workshop and registration status changes without e
   assert.match(sql, /grant\s+select\s+on\s+public\.admin_audit_log\s+to\s+authenticated/i);
   assert.doesNotMatch(sql, /grant\s+select\s+on\s+public\.admin_audit_log\s+to\s+anon/i);
 });
+
+
+test('trigger-only audit functions are not executable through the API', () => {
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.audit_workshop_admin_change\(\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.audit_registration_admin_change\(\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
+});
+
+test('public workshop RPCs explicitly revoke stale authenticated grants', () => {
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.list_public_workshops\(\)\s+from\s+authenticated/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.create_public_registration\(uuid,text,text,text,text,integer,date,text\)\s+from\s+authenticated/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+from\s+authenticated/i);
+});
