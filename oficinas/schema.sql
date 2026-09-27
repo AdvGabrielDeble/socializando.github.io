@@ -609,9 +609,15 @@ grant select, update on public.registrations to authenticated;
 grant select on public.admin_audit_log to authenticated;
 revoke all on public.workshop_availability from anon;
 grant select on public.workshop_availability to authenticated;
+revoke all on function public.audit_workshop_admin_change() from public, anon, authenticated;
+revoke all on function public.audit_registration_admin_change() from public, anon, authenticated;
+
 revoke all on function public.list_public_workshops() from public;
+revoke all on function public.list_public_workshops() from authenticated;
 revoke all on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) from public;
+revoke all on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) from authenticated;
 revoke all on function public.report_public_payment(uuid,uuid) from public;
+revoke all on function public.report_public_payment(uuid,uuid) from authenticated;
 
 grant execute on function public.list_public_workshops() to anon;
 grant execute on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) to anon;
