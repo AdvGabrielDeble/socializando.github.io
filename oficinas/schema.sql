@@ -117,6 +117,43 @@ from public.workshops w
 left join public.registrations r on r.workshop_id = w.id
 group by w.id;
 
+create or replace function public.list_public_workshops()
+returns table (
+  id uuid,
+  experience_key text,
+  slug text,
+  title text,
+  short_description text,
+  event_date date,
+  start_time time,
+  end_time time,
+  minimum_age integer,
+  age_label text,
+  price_cents integer,
+  capacity integer,
+  status text,
+  image_url text,
+  confirmed_count integer,
+  available_spots integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $
+  select
+    w.id, w.experience_key, w.slug, w.title, w.short_description,
+    w.event_date, w.start_time, w.end_time, w.minimum_age, w.age_label,
+    w.price_cents, w.capacity, w.status, w.image_url,
+    count(r.id) filter (where r.status = 'confirmed')::integer as confirmed_count,
+    greatest(w.capacity - count(r.id) filter (where r.status = 'confirmed')::integer, 0) as available_spots
+  from public.workshops w
+  left join public.registrations r on r.workshop_id = w.id
+  where w.status in ('open','sold_out')
+  group by w.id
+  order by w.event_date, w.start_time;
+$;
+
 create or replace function public.prevent_overbooking()
 returns trigger
 language plpgsql
@@ -330,7 +367,9 @@ with check (public.is_workshop_admin());
 revoke all on public.registrations from anon;
 revoke all on public.admin_users from anon, authenticated;
 grant select on public.workshops to anon, authenticated;
-grant select on public.workshop_availability to anon, authenticated;
+revoke all on public.workshop_availability from anon;
+grant select on public.workshop_availability to authenticated;
+grant execute on function public.list_public_workshops() to anon, authenticated;
 grant execute on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) to anon, authenticated;
 grant execute on function public.report_public_payment(uuid,uuid) to anon, authenticated;
 grant execute on function public.is_workshop_admin() to authenticated;
