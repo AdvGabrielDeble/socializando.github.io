@@ -9,7 +9,7 @@ const CANONICAL_ARTWORK_RULES = Object.freeze({
     storagePath: 'fabrica-squishy-magicos-2026-10-10.png',
     sha256: '2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339',
     sizeBytes: 3529499,
-    mimeType: 'image/jpeg',
+    mimeType: 'image/png',
   }),
 });
 
