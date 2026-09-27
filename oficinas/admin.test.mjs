@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, readMagicLinkSession } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -110,35 +110,54 @@ test('admin artwork controls have responsive visual treatment', () => {
 });
 
 
-test('passwordless admin requests a magic link to the canonical admin page', async () => {
+test('admin login exchanges SOCIALIZANDO + password for a Supabase session without embedding the password', async () => {
   let request;
   const api = createAdminApi({
     config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
     fetchImpl: async (url, options) => {
       request = { url, options };
-      return { ok:true, status:200, async json(){ return {}; } };
+      return { ok:true, status:200, async json(){ return { access_token:'jwt', refresh_token:'refresh' }; } };
     },
   });
 
-  await api.requestMagicLink('gabrieldeblegd@gmail.com', 'https://www.projetosocializando.com.br/oficinas/admin.html');
-  assert.match(request.url, /\/auth\/v1\/otp\?redirect_to=/);
+  const session = await api.signInWithPassword('socializando', 'senha-fornecida-em-runtime');
+  assert.equal(session.access_token, 'jwt');
+  assert.match(request.url, /\/auth\/v1\/token\?grant_type=password$/);
   assert.equal(request.options.headers.apikey, 'sb_publishable_example');
   assert.equal(request.options.headers.Authorization, undefined);
   const body = JSON.parse(request.options.body);
   assert.equal(body.email, 'gabrieldeblegd@gmail.com');
-  assert.equal(body.create_user, true);
+  assert.equal(body.password, 'senha-fornecida-em-runtime');
 });
 
-test('magic-link callback session is read from URL hash without exposing it in the page', () => {
-  const session = readMagicLinkSession('#access_token=abc123&expires_in=3600&refresh_token=ref456&token_type=bearer&type=magiclink');
-  assert.deepEqual(session, {
-    accessToken:'abc123',
-    refreshToken:'ref456',
-    expiresIn:3600,
-    tokenType:'bearer',
-    type:'magiclink',
+test('admin login rejects any username other than SOCIALIZANDO before calling Supabase', async () => {
+  let called = false;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async () => {
+      called = true;
+      return { ok:true, status:200, async json(){ return {}; } };
+    },
   });
-  assert.equal(readMagicLinkSession('#error=access_denied'), null);
+
+  await assert.rejects(() => api.signInWithPassword('OUTRO', 'senha'), /usuário ou senha inválidos/i);
+  assert.equal(called, false);
+});
+
+test('admin session refresh uses the refresh token endpoint', async () => {
+  let request;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok:true, status:200, async json(){ return { access_token:'new-jwt', refresh_token:'new-refresh' }; } };
+    },
+  });
+
+  const session = await api.refreshSession('refresh-123');
+  assert.equal(session.access_token, 'new-jwt');
+  assert.match(request.url, /grant_type=refresh_token$/);
+  assert.deepEqual(JSON.parse(request.options.body), { refresh_token:'refresh-123' });
 });
 
 
@@ -291,4 +310,14 @@ test('admin API can read the audit log ordered newest first', async () => {
   await api.listAuditLog('jwt-token');
   assert.match(request.url, /admin_audit_log\?select=\*&order=created_at\.desc/);
   assert.equal(request.options.headers.Authorization, 'Bearer jwt-token');
+});
+
+
+test('admin source has no Magic Link flow or embedded administrative password', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /requestMagicLink|readMagicLinkSession|\/auth\/v1\/otp|Magic Link/i);
+  assert.match(source, /name="username"/);
+  assert.match(source, /name="password"/);
+  assert.match(source, /SOCIALIZANDO/);
+  assert.doesNotMatch(source, /65ca77tieli1086/);
 });

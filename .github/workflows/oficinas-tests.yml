@@ -1,4 +1,4 @@
-name: Oficinas v4.6.x tests
+name: Oficinas tests
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - hotfix/v4.6.2-pix-vaga-dialog
       - feature/v4.7.0-admin-oficinas
       - hotfix/v4.7.2-price-45
+      - feature/v4.8.0-admin-auth
   workflow_dispatch:
 
 jobs:
