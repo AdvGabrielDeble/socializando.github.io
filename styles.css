@@ -127,6 +127,39 @@ body.loaded .preloader { opacity: 0; visibility: hidden; }
 }
 .main-nav a:hover::after { transform: scaleX(1); }
 
+.mobile-nav-toggle {
+  display: none;
+  min-height: 42px;
+  padding: 0 13px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 999px;
+  color: var(--white);
+  background: rgba(255,255,255,.09);
+  font: inherit;
+  font-size: .84rem;
+  font-weight: 900;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+.mobile-nav-toggle__icon {
+  width: 18px;
+  display: grid;
+  gap: 3px;
+}
+.mobile-nav-toggle__icon i {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform .2s ease, opacity .2s ease;
+}
+.mobile-nav-toggle[aria-expanded="true"] .mobile-nav-toggle__icon i:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+.mobile-nav-toggle[aria-expanded="true"] .mobile-nav-toggle__icon i:nth-child(2) { opacity: 0; }
+.mobile-nav-toggle[aria-expanded="true"] .mobile-nav-toggle__icon i:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
+
 .button {
   min-height: 52px;
   padding: 0 22px;
@@ -918,7 +951,33 @@ details p {
 }
 
 @media (max-width: 840px) {
-  .main-nav { display: none; }
+  .header-inner { position: relative; }
+  .mobile-nav-toggle { display: inline-flex; margin-left: auto; }
+  .main-nav {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 130;
+    width: min(300px, calc(100vw - 34px));
+    padding: 10px;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 20px;
+    color: var(--white);
+    background: rgba(38,17,90,.97);
+    box-shadow: 0 22px 50px rgba(20,8,54,.34);
+    backdrop-filter: blur(18px);
+  }
+  .main-nav.is-open { display: grid; }
+  .main-nav a {
+    padding: 12px 14px;
+    border-radius: 13px;
+  }
+  .main-nav a:hover,
+  .main-nav a:focus-visible { background: rgba(255,255,255,.09); }
+  .main-nav a::after { display: none; }
   .skills-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
