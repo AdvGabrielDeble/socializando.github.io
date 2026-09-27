@@ -1,14 +1,14 @@
 const CANONICAL_ARTWORK_RULES = Object.freeze({
   'expedicao-jurassica|2026-10-10': Object.freeze({
-    storagePath: 'expedicao-jurassica-2026-10-10.jpeg',
-    sha256: 'b0727c5769961fb392a43eeab70eaaf394e5efeb72202455b8b82bfa6f03f132',
-    sizeBytes: 479180,
-    mimeType: 'image/jpeg',
+    storagePath: 'expedicao-jurassica-2026-10-10.png',
+    sha256: 'e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454',
+    sizeBytes: 3585562,
+    mimeType: 'image/png',
   }),
-  'fabrica-dos-squishs-magicos|2026-10-10': Object.freeze({
-    storagePath: 'fabrica-squishs-magicos-2026-10-10.jpeg',
-    sha256: '591ea6a7843cbb39b24b82bfb8904083ddf38b808ff24f09f11fb0871f188e9d',
-    sizeBytes: 312099,
+  'fabrica-dos-squishy-magicos|2026-10-10': Object.freeze({
+    storagePath: 'fabrica-squishy-magicos-2026-10-10.png',
+    sha256: '2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339',
+    sizeBytes: 3529499,
     mimeType: 'image/jpeg',
   }),
 });
@@ -37,7 +37,7 @@ export function validateArtworkFileMeta(file, workshop) {
   const rule = getCanonicalArtworkRule(workshop);
   if (rule) {
     if (String(file.type).toLowerCase() !== rule.mimeType) {
-      throw new Error('Para esta turma, envie o JPEG original aprovado.');
+      throw new Error('Para esta turma, envie o PNG original aprovado.');
     }
     if (Number(file.size) !== rule.sizeBytes) {
       throw new Error('O arquivo não corresponde ao arquivo original aprovado.');
