@@ -34,7 +34,7 @@ export function buildNewSession(source, { eventDate, startTime, endTime, capacit
     price_cents: Number(source.price_cents),
     capacity: Number(capacity || source.capacity),
     status: 'open',
-    image_url: source.image_url ?? null,
+    image_url: null,
   };
 }
 
@@ -152,7 +152,7 @@ async function initAdmin() {
       </header>
       <main class="admin-main">
         <section class="admin-panel">
-          <div class="admin-panel__heading"><div><span>NOVA TURMA</span><h2>Abrir outra data</h2></div><p>Reaproveita a mesma oficina, arte e valor; a nova turma ganha vagas e contador próprios.</p></div>
+          <div class="admin-panel__heading"><div><span>NOVA TURMA</span><h2>Abrir outra data</h2></div><p>Reaproveita a mesma oficina e valor; a nova turma ganha vagas e contador próprios. A arte da nova data é vinculada separadamente para preservar as criações aprovadas.</p></div>
           <form class="admin-session-form" data-new-session>
             <label>Oficina<select name="sourceId" required>${sources.map(w => `<option value="${esc(w.id)}">${esc(w.title)}</option>`).join('')}</select></label>
             <label>Data<input name="eventDate" type="date" required /></label>
