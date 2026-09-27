@@ -3,13 +3,42 @@
 -- reutilizam a mesma experience_key e recebem slug próprio.
 
 -- migração de nomenclatura Squishy aprovada em 27/09/2026.
-update public.workshops
-set experience_key = 'fabrica-dos-squishy-magicos',
-    slug = 'fabrica-dos-squishy-magicos-2026-10-10',
-    title = 'Fábrica dos Squishy Mágicos',
-    short_description = 'Oficina de Paper Squishy especial do Dia das Crianças.',
-    updated_at = now()
-where slug = 'fabrica-dos-squishy-magicos-2026-10-10';
+do $squishy_migration$
+declare
+  v_old_id uuid;
+  v_new_id uuid;
+  v_old_regs integer;
+begin
+  select id into v_old_id
+  from public.workshops
+  where slug = 'fabrica-dos-squishs-magicos-2026-10-10';
+
+  select id into v_new_id
+  from public.workshops
+  where slug = 'fabrica-dos-squishy-magicos-2026-10-10';
+
+  if v_old_id is not null and v_new_id is null then
+    update public.workshops
+    set experience_key = 'fabrica-dos-squishy-magicos',
+        slug = 'fabrica-dos-squishy-magicos-2026-10-10',
+        title = 'Fábrica dos Squishy Mágicos',
+        short_description = 'Oficina de Paper Squishy especial do Dia das Crianças.',
+        image_url = '/assets/oficinas/fabrica-squishy-magicos-2026-10-10.png',
+        updated_at = now()
+    where id = v_old_id;
+  elsif v_old_id is not null and v_new_id is not null then
+    select count(*)::integer into v_old_regs
+    from public.registrations
+    where workshop_id = v_old_id;
+
+    if v_old_regs > 0 then
+      raise exception 'Não é seguro remover a turma antiga Squishs: existem % inscrições vinculadas.', v_old_regs;
+    end if;
+
+    delete from public.workshops where id = v_old_id;
+  end if;
+end
+$squishy_migration$;
 
 insert into public.workshops (
   experience_key,
