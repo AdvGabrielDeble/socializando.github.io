@@ -137,9 +137,9 @@ test('WhatsApp control message starts with the workshop name and includes form a
   assert.match(message, /Idade: 7 anos/);
   assert.match(message, /Data de nascimento: 12\/04\/2019/);
   assert.match(message, /Observações: Alergia informada pela responsável/);
-  assert.match(message, /Pagamento: Pix informado — R\$ 50,00/);
+  assert.match(message, /Pagamento: Pix efetuado — R\$ 50,00/);
   assert.match(message, /Referência: SJABC123/);
-  assert.match(message, /Situação: aguardando conferência do pagamento/);
+  assert.match(message, /Situação: vaga abatida no site — aguardando conferência do pagamento/);
   assert.doesNotMatch(message, /SECRET-TOKEN-NOT-SHARED/);
 });
 
