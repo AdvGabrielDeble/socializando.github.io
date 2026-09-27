@@ -4,25 +4,25 @@
   "artworks": [
     {
       "experience_key": "expedicao-jurassica",
-      "source_filename": "WhatsApp Image 2026-09-26 at 21.28.26.jpeg",
-      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10.jpeg",
-      "sha256": "b0727c5769961fb392a43eeab70eaaf394e5efeb72202455b8b82bfa6f03f132",
-      "bytes": 479180,
+      "source_filename": "Imagem do ChatGPT 27 de set. de 2026, 15_36_40.png",
+      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10.png",
+      "sha256": "e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454",
+      "bytes": 3585562,
       "width": 1024,
       "height": 1536,
-      "status": "source-verified-local-preview-integrated-pending-github-binary-transfer"
+      "status": "source-verified-pending-github-binary-transfer"
     },
     {
-      "experience_key": "fabrica-dos-squishs-magicos",
-      "source_filename": "WhatsApp Image 2026-09-26 at 21.29.24.jpeg",
-      "target_path": "assets/oficinas/fabrica-squishs-magicos-2026-10-10.jpeg",
-      "sha256": "591ea6a7843cbb39b24b82bfb8904083ddf38b808ff24f09f11fb0871f188e9d",
-      "bytes": 312099,
+      "experience_key": "fabrica-dos-squishy-magicos",
+      "source_filename": "Imagem do ChatGPT 27 de set. de 2026, 15_44_11.png",
+      "target_path": "assets/oficinas/fabrica-squishy-magicos-2026-10-10.png",
+      "sha256": "2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339",
+      "bytes": 3529499,
       "width": 1254,
       "height": 1254,
-      "status": "source-verified-local-preview-integrated-pending-github-binary-transfer"
+      "status": "source-verified-pending-github-binary-transfer"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Os JPEGs foram validados localmente por SHA-256 e usados sem alteração na prévia integrada. O seed permanece com image_url nulo até os binários existirem no repositório."
+  "notes": "Artes atualizadas aprovadas em 27/09/2026. A nomenclatura pública correta é Squishy. Os PNGs devem ser transferidos sem edição, recorte, recompressão ou conversão."
 }
