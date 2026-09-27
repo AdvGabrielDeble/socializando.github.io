@@ -112,3 +112,14 @@ test('PUBLIC function execution is revoked before narrow grants', () => {
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.create_public_registration\(uuid,text,text,text,text,integer,date,text\)\s+to\s+anon/i);
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+to\s+anon/i);
 });
+
+
+test('admin email allowlist enables passwordless first access without exposing the list', () => {
+  assert.match(sql, /create\s+table\s+if\s+not\s+exists\s+public\.admin_emails/i);
+  assert.match(sql, /email\s+text\s+primary\s+key/i);
+  assert.match(sql, /alter\s+table\s+public\.admin_emails\s+enable\s+row\s+level\s+security/i);
+  assert.match(sql, /lower\s*\(\s*auth\.jwt\(\)\s*->>\s*'email'\s*\)/i);
+  assert.match(sql, /from\s+public\.admin_emails/i);
+  assert.doesNotMatch(sql, /create\s+policy[^;]*on\s+public\.admin_emails/is);
+  assert.match(sql, /revoke\s+all\s+on\s+public\.admin_emails\s+from\s+anon\s*,\s*authenticated/i);
+});
