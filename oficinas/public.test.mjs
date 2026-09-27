@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupWorkshopSessions, buildWorkshopCardModel, getModuleState } from './public.js';
+import { groupWorkshopSessions, buildWorkshopCardModel, buildPublicSessionCards, getModuleState } from './public.js';
 
 const sessions = [
   {
@@ -52,4 +52,20 @@ test('empty successful list is not confused with backend failure', () => {
   assert.deepEqual(getModuleState({ loading: false, error: null, groups: [] }), {
     kind: 'empty', message: 'Nenhuma oficina com inscrições abertas neste momento.'
   });
+});
+
+
+test('public cards never reuse a date-stamped artwork across different session dates', () => {
+  const dated = [
+    { ...sessions[0], imageUrl: 'jurassica-10-out.jpeg' },
+    { ...sessions[1], imageUrl: null },
+  ];
+  const cards = buildPublicSessionCards(dated);
+  assert.equal(cards.length, 2);
+  assert.equal(cards[0].sessions.length, 1);
+  assert.equal(cards[0].imageUrl, 'jurassica-10-out.jpeg');
+  assert.equal(cards[0].sessions[0].eventDate, '2026-10-10');
+  assert.equal(cards[1].sessions.length, 1);
+  assert.equal(cards[1].imageUrl, null);
+  assert.equal(cards[1].sessions[0].eventDate, '2026-10-17');
 });
