@@ -185,3 +185,15 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - o token público da inscrição nunca é enviado ao WhatsApp;
 - o consentimento do formulário informa expressamente o encaminhamento dos dados ao WhatsApp oficial para conferência da inscrição e do pagamento;
 - assets alterados receberam cache-busting `v=461` para evitar que celulares mantenham CSS/JS antigos em cache.
+
+
+## Ajuste v4.6.2 — Pix ocupa vaga + fechamento do formulário
+
+- corrigido o botão X do formulário de inscrição: ele fecha o modal explicitamente e não depende da validação dos campos obrigatórios;
+- o cadastro inicial continua sem consumir vaga;
+- ao responsável informar que o Pix foi efetivamente realizado, o status passa para `payment_reported` e uma vaga é abatida imediatamente;
+- a confirmação administrativa posterior não abate uma segunda vaga; apenas valida o pagamento já contado;
+- cancelamento de uma inscrição em `payment_reported` ou `confirmed` devolve a vaga;
+- o contador público é recarregado imediatamente após o Pix ser informado como efetuado;
+- somente depois dessa transição é preparada a mensagem para o WhatsApp oficial;
+- a mensagem de WhatsApp identifica que a vaga já foi abatida e permanece aguardando conferência da equipe.
