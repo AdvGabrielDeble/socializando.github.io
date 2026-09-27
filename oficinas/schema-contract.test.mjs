@@ -83,3 +83,11 @@ test('public RPC grants do not extend to authenticated users', () => {
   assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+to\s+anon\s*;/i);
   assert.doesNotMatch(sql, /grant\s+execute\s+on\s+function\s+public\.(?:list_public_workshops|create_public_registration|report_public_payment)[^;]*to\s+[^;]*authenticated/i);
 });
+
+
+test('schema can be safely reapplied without duplicate admin policies', () => {
+  assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can select workshops"\s+on\s+public\.workshops/i);
+  assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can insert workshops"\s+on\s+public\.workshops/i);
+  assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can update workshops"\s+on\s+public\.workshops/i);
+  assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can delete workshops"\s+on\s+public\.workshops/i);
+});
