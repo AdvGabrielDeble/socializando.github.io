@@ -1,0 +1,26 @@
+{
+  "version": "v4.6.0",
+  "policy": "As artes canônicas devem ser copiadas byte a byte. Não redimensionar, recomprimir, recortar, converter, recolorir ou editar.",
+  "artworks": [
+    {
+      "experience_key": "expedicao-jurassica",
+      "source_filename": "WhatsApp Image 2026-09-26 at 21.28.26.jpeg",
+      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10.jpeg",
+      "sha256": "b0727c5769961fb392a43eeab70eaaf394e5efeb72202455b8b82bfa6f03f132",
+      "bytes": 479180,
+      "width": 1024,
+      "height": 1536,
+      "status": "source-verified-pending-binary-transfer"
+    },
+    {
+      "experience_key": "fabrica-dos-squishs-magicos",
+      "source_filename": "WhatsApp Image 2026-09-26 at 21.29.24.jpeg",
+      "target_path": "assets/oficinas/fabrica-squishs-magicos-2026-10-10.jpeg",
+      "sha256": "591ea6a7843cbb39b24b82bfb8904083ddf38b808ff24f09f11fb0871f188e9d",
+      "bytes": 312099,
+      "width": 1254,
+      "height": 1254,
+      "status": "source-verified-pending-binary-transfer"
+    }
+  ]
+}
