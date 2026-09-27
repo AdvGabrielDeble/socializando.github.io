@@ -26,3 +26,11 @@ test('mobile navigation closes after choosing a section', () => {
   assert.match(script, /querySelectorAll\(["']a\[href\^=/);
   assert.match(script, /classList\.remove\(["']is-open["']\)/);
 });
+
+
+test('v4.6.1 cache-busts changed CSS, site JS and workshop JS on publication', () => {
+  assert.match(html, /styles\.css\?v=461/);
+  assert.match(html, /script\.js\?v=461/);
+  assert.match(html, /oficinas\/supabase-config\.js\?v=461/);
+  assert.match(html, /oficinas\/public\.js\?v=461/);
+});
