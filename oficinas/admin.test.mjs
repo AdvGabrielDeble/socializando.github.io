@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, buildNewSession, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, readMagicLinkSession } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, readMagicLinkSession } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -184,4 +184,111 @@ test('reported Pix is already counted as occupied in admin availability', () => 
 test('a payment_reported registration can still be confirmed when it already occupies the last spot', () => {
   const registration = { status:'payment_reported' };
   assert.equal(canConfirmRegistration(registration, { availableSpots:0 }), true);
+});
+
+
+test('buildNewWorkshop creates a fully manageable new experience', () => {
+  const result = buildNewWorkshop({
+    title: 'Laboratório dos Monstros',
+    shortDescription: 'Uma nova experiência especial.',
+    eventDate: '2026-10-24',
+    startTime: '14:00',
+    endTime: '15:30',
+    minimumAge: 6,
+    priceReais: '65,00',
+    capacity: 18,
+  });
+
+  assert.equal(result.experience_key, 'laboratorio-dos-monstros');
+  assert.equal(result.slug, 'laboratorio-dos-monstros-2026-10-24');
+  assert.equal(result.title, 'Laboratório dos Monstros');
+  assert.equal(result.short_description, 'Uma nova experiência especial.');
+  assert.equal(result.event_date, '2026-10-24');
+  assert.equal(result.start_time, '14:00');
+  assert.equal(result.end_time, '15:30');
+  assert.equal(result.minimum_age, 6);
+  assert.equal(result.age_label, 'A partir de 6 anos');
+  assert.equal(result.price_cents, 6500);
+  assert.equal(result.capacity, 18);
+  assert.equal(result.status, 'open');
+  assert.equal(result.image_url, null);
+});
+
+test('adjustCapacity supports quick +1 +5 and never drops below occupied spots', () => {
+  assert.equal(adjustCapacity(15, 1, 8), 16);
+  assert.equal(adjustCapacity(15, 5, 8), 20);
+  assert.equal(adjustCapacity(15, -1, 8), 14);
+  assert.equal(adjustCapacity(8, -1, 8), 8);
+  assert.equal(adjustCapacity(9, -5, 8), 8);
+});
+
+test('buildWorkshopPatch edits operational fields without changing experience identity', () => {
+  const patch = buildWorkshopPatch({
+    title: 'Expedição Jurássica Especial',
+    shortDescription: 'Nova descrição.',
+    eventDate: '2026-10-17',
+    startTime: '16:00',
+    endTime: '17:30',
+    minimumAge: 5,
+    priceReais: '55',
+    capacity: 20,
+    status: 'open',
+  }, 9);
+
+  assert.deepEqual(patch, {
+    title: 'Expedição Jurássica Especial',
+    short_description: 'Nova descrição.',
+    event_date: '2026-10-17',
+    start_time: '16:00',
+    end_time: '17:30',
+    minimum_age: 5,
+    age_label: 'A partir de 5 anos',
+    price_cents: 5500,
+    capacity: 20,
+    status: 'open',
+  });
+
+  assert.throws(() => buildWorkshopPatch({ capacity: 8, status:'open' }, 9), /vagas já ocupadas/i);
+});
+
+test('filterRegistrations supports operational status filters', () => {
+  const registrations = [
+    { id:'a', status:'pending_payment' },
+    { id:'b', status:'payment_reported' },
+    { id:'c', status:'confirmed' },
+    { id:'d', status:'cancelled' },
+  ];
+  assert.equal(filterRegistrations(registrations, 'all').length, 4);
+  assert.deepEqual(filterRegistrations(registrations, 'payment_reported').map(r => r.id), ['b']);
+  assert.deepEqual(filterRegistrations(registrations, 'confirmed').map(r => r.id), ['c']);
+  assert.deepEqual(filterRegistrations(registrations, 'pending_payment').map(r => r.id), ['a']);
+  assert.deepEqual(filterRegistrations(registrations, 'cancelled').map(r => r.id), ['d']);
+});
+
+test('admin UI exposes separate actions for new workshop, new session and quick capacity controls', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  assert.match(source, /data-new-workshop/);
+  assert.match(source, /Criar nova oficina/);
+  assert.match(source, /Abrir nova turma/);
+  assert.match(source, /data-capacity-delta="1"/);
+  assert.match(source, /data-capacity-delta="5"/);
+  assert.match(source, /data-capacity-delta="-1"/);
+  assert.match(source, /data-edit-workshop/);
+  assert.match(source, /data-workshop-status/);
+  assert.match(source, /data-registration-filter/);
+});
+
+test('admin API can read the audit log ordered newest first', async () => {
+  let request;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok:true, status:200, async json(){ return []; } };
+    },
+  });
+
+  await api.listAuditLog('jwt-token');
+  assert.match(request.url, /admin_audit_log\?select=\*&order=created_at\.desc/);
+  assert.equal(request.options.headers.Authorization, 'Bearer jwt-token');
 });

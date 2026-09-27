@@ -197,3 +197,21 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - o contador público é recarregado imediatamente após o Pix ser informado como efetuado;
 - somente depois dessa transição é preparada a mensagem para o WhatsApp oficial;
 - a mensagem de WhatsApp identifica que a vaga já foi abatida e permanece aguardando conferência da equipe.
+
+
+## Ajuste v4.7.0 — Painel de Gestão de Oficinas
+
+- painel administrativo transformado em backoffice completo das oficinas;
+- criação de nova oficina diretamente pelo painel, com nome, descrição, data, horários, idade mínima, valor e capacidade;
+- abertura de nova turma a partir de uma experiência existente, mantendo contador e arte independentes;
+- edição de turma: nome, descrição, data, horários, idade mínima, valor, capacidade e status;
+- ações rápidas de capacidade `-1`, `+1` e `+5`, além de definição manual;
+- proteção para nunca reduzir capacidade abaixo das vagas já ocupadas;
+- estados administrativos: rascunho, inscrições abertas, inscrições encerradas, esgotada e arquivada;
+- filtros de inscrições por status: todos, Pix efetuado, confirmados, aguardando Pix e cancelados;
+- WhatsApp do responsável clicável no painel;
+- dashboard com total de turmas, vagas disponíveis, vagas ocupadas e Pix aguardando conferência;
+- histórico administrativo com registro de criação/alteração de oficinas e mudanças de status das inscrições;
+- audit log sem duplicação de dados pessoais da criança, registrando apenas identificadores operacionais e transições;
+- schema do Supabase atualizado mantendo o plano Free;
+- 75 testes automatizados aprovados antes da publicação.

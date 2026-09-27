@@ -107,6 +107,105 @@ export function canConfirmRegistration(registration) {
   return registration?.status === 'payment_reported';
 }
 
+
+function slugify(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function reaisToCents(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+  const normalized = raw
+    .replace(/\s/g, '')
+    .replace(/^R\$/i, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  const number = Number(normalized);
+  if (!Number.isFinite(number) || number < 0) throw new Error('Valor inválido.');
+  return Math.round(number * 100);
+}
+
+export function adjustCapacity(currentCapacity, delta, occupiedCount = 0) {
+  const current = Math.max(1, Number(currentCapacity) || 1);
+  const occupied = Math.max(0, Number(occupiedCount) || 0);
+  const next = Math.trunc(current + Number(delta || 0));
+  return Math.max(occupied || 1, next);
+}
+
+export function buildNewWorkshop({
+  title,
+  shortDescription,
+  eventDate,
+  startTime,
+  endTime,
+  minimumAge,
+  priceReais,
+  capacity,
+}) {
+  const cleanTitle = String(title || '').trim();
+  const experienceKey = slugify(cleanTitle);
+  if (!cleanTitle || !experienceKey || !eventDate) throw new Error('Preencha nome e data da nova oficina.');
+  const age = Math.max(0, Number(minimumAge) || 0);
+  const spots = Math.max(1, Number(capacity) || 1);
+
+  return {
+    experience_key: experienceKey,
+    slug: `${experienceKey}-${eventDate}`,
+    title: cleanTitle,
+    short_description: String(shortDescription || '').trim() || null,
+    event_date: eventDate,
+    start_time: startTime || null,
+    end_time: endTime || null,
+    minimum_age: age,
+    age_label: `A partir de ${age} anos`,
+    price_cents: reaisToCents(priceReais),
+    capacity: spots,
+    status: 'open',
+    image_url: null,
+  };
+}
+
+export function buildWorkshopPatch({
+  title,
+  shortDescription,
+  eventDate,
+  startTime,
+  endTime,
+  minimumAge,
+  priceReais,
+  capacity,
+  status,
+}, occupiedCount = 0) {
+  const occupied = Math.max(0, Number(occupiedCount) || 0);
+  const spots = Math.max(1, Number(capacity) || 1);
+  if (spots < occupied) {
+    throw new Error(`A capacidade não pode ficar abaixo das ${occupied} vagas já ocupadas.`);
+  }
+  const age = Math.max(0, Number(minimumAge) || 0);
+  return {
+    title: String(title || '').trim(),
+    short_description: String(shortDescription || '').trim() || null,
+    event_date: eventDate || null,
+    start_time: startTime || null,
+    end_time: endTime || null,
+    minimum_age: age,
+    age_label: `A partir de ${age} anos`,
+    price_cents: reaisToCents(priceReais),
+    capacity: spots,
+    status: status || 'draft',
+  };
+}
+
+export function filterRegistrations(registrations = [], filter = 'all') {
+  if (!filter || filter === 'all') return [...registrations];
+  return registrations.filter((registration) => registration.status === filter);
+}
+
 export function buildNewSession(source, { eventDate, startTime, endTime, capacity }) {
   if (!source?.experience_key || !eventDate) throw new Error('Dados da nova turma incompletos.');
   return {
@@ -166,6 +265,9 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
     },
     async listRegistrations(token) {
       return parse(await fetchImpl(`${url}/rest/v1/registrations?select=*&order=created_at.desc`, { headers: authHeaders(token) }));
+    },
+    async listAuditLog(token) {
+      return parse(await fetchImpl(`${url}/rest/v1/admin_audit_log?select=*&order=created_at.desc&limit=50`, { headers: authHeaders(token) }));
     },
     async updateRegistrationStatus(id, status, token) {
       return parse(await fetchImpl(`${url}/rest/v1/registrations?id=eq.${encodeURIComponent(id)}`, {
@@ -239,6 +341,7 @@ async function initAdmin() {
 
   let workshops = [];
   let registrations = [];
+  let auditLog = [];
 
   const renderLogin = (message = '') => {
     root.innerHTML = `
@@ -276,41 +379,140 @@ async function initAdmin() {
   const renderDashboard = () => {
     const summaries = summarizeWorkshops(workshops, registrations);
     const sources = [...new Map(workshops.map((w) => [w.experience_key, w])).values()];
+    const totalAvailable = summaries.reduce((sum, item) => sum + item.availableSpots, 0);
+    const totalOccupied = summaries.reduce((sum, item) => sum + item.occupiedCount, 0);
+    const totalReported = summaries.reduce((sum, item) => sum + item.paymentReportedCount, 0);
+    const statusOptions = [
+      ['draft','Rascunho'],
+      ['open','Inscrições abertas'],
+      ['closed','Inscrições encerradas'],
+      ['sold_out','Esgotada'],
+      ['archived','Arquivada'],
+    ];
+
+    const priceInput = (cents) => ((Number(cents) || 0) / 100).toFixed(2).replace('.', ',');
+    const whatsappHref = (value) => {
+      const digits = String(value || '').replace(/\D/g, '');
+      const normalized = digits.startsWith('55') ? digits : `55${digits}`;
+      return digits ? `https://wa.me/${normalized}` : '#';
+    };
+    const auditActionLabel = (item) => ({
+      workshop_created:'Oficina/turma criada',
+      workshop_updated:'Oficina/turma alterada',
+      workshop_deleted:'Oficina/turma excluída',
+      registration_status_changed:'Status de inscrição alterado',
+    })[item.action] || item.action;
+
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.7.0</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
+
       <main class="admin-main">
-        <section class="admin-panel">
-          <div class="admin-panel__heading"><div><span>NOVA TURMA</span><h2>Abrir outra data</h2></div><p>Reaproveita a mesma oficina e valor; a nova turma ganha vagas e contador próprios. A arte da nova data é vinculada separadamente para preservar as criações aprovadas.</p></div>
-          <form class="admin-session-form" data-new-session>
-            <label>Oficina<select name="sourceId" required>${sources.map(w => `<option value="${esc(w.id)}">${esc(w.title)}</option>`).join('')}</select></label>
-            <label>Data<input name="eventDate" type="date" required /></label>
-            <label>Início<input name="startTime" type="time" required /></label>
-            <label>Fim<input name="endTime" type="time" required /></label>
-            <label>Vagas<input name="capacity" type="number" min="1" value="15" required /></label>
-            <button type="submit">Criar turma</button>
-            <p data-session-error hidden></p>
-          </form>
+        <section class="admin-summary-grid">
+          <article><span>Turmas</span><strong>${summaries.length}</strong></article>
+          <article><span>Vagas disponíveis</span><strong>${totalAvailable}</strong></article>
+          <article><span>Vagas ocupadas</span><strong>${totalOccupied}</strong></article>
+          <article><span>Pix aguardando conferência</span><strong>${totalReported}</strong></article>
         </section>
+
+        <section class="admin-command-grid">
+          <section class="admin-panel">
+            <div class="admin-panel__heading">
+              <div><span>NOVA OFICINA</span><h2>Criar nova oficina</h2></div>
+              <p>Cria uma experiência nova, com identidade, data, horário, preço e vagas próprios.</p>
+            </div>
+            <form class="admin-create-form" data-new-workshop>
+              <label>Nome da oficina<input name="title" required placeholder="Ex.: Laboratório dos Monstros" /></label>
+              <label class="admin-create-form__wide">Descrição<input name="shortDescription" placeholder="Descrição curta para a LP" /></label>
+              <label>Data<input name="eventDate" type="date" required /></label>
+              <label>Início<input name="startTime" type="time" required /></label>
+              <label>Fim<input name="endTime" type="time" required /></label>
+              <label>Idade mínima<input name="minimumAge" type="number" min="0" value="5" required /></label>
+              <label>Valor (R$)<input name="priceReais" inputmode="decimal" value="50,00" required /></label>
+              <label>Vagas<input name="capacity" type="number" min="1" value="15" required /></label>
+              <button type="submit">Criar nova oficina</button>
+              <p data-workshop-create-error hidden></p>
+            </form>
+          </section>
+
+          <section class="admin-panel">
+            <div class="admin-panel__heading">
+              <div><span>NOVA TURMA</span><h2>Abrir nova turma</h2></div>
+              <p>Reaproveita uma oficina existente. Data, horário, vagas e arte da nova turma são independentes.</p>
+            </div>
+            <form class="admin-session-form" data-new-session>
+              <label>Oficina<select name="sourceId" required>${sources.map(w => `<option value="${esc(w.id)}">${esc(w.title)}</option>`).join('')}</select></label>
+              <label>Data<input name="eventDate" type="date" required /></label>
+              <label>Início<input name="startTime" type="time" required /></label>
+              <label>Fim<input name="endTime" type="time" required /></label>
+              <label>Vagas<input name="capacity" type="number" min="1" value="15" required /></label>
+              <button type="submit">Abrir nova turma</button>
+              <p data-session-error hidden></p>
+            </form>
+          </section>
+        </section>
+
         <section class="admin-workshops">
           ${summaries.map(summary => `
             <article class="admin-workshop" data-workshop-id="${esc(summary.id)}">
               <div class="admin-workshop__head">
-                <div><span>${esc(dateLabel(summary.event_date))} · ${esc(String(summary.start_time||'').slice(0,5))}</span><h2>${esc(summary.title)}</h2></div>
+                <div>
+                  <span>${esc(dateLabel(summary.event_date))} · ${esc(String(summary.start_time||'').slice(0,5))}–${esc(String(summary.end_time||'').slice(0,5))}</span>
+                  <h2>${esc(summary.title)}</h2>
+                  <small>${esc(summary.short_description || '')}</small>
+                </div>
                 <div class="admin-capacity"><strong>${summary.availableSpots}</strong><span>vagas disponíveis</span></div>
               </div>
+
               <div class="admin-stats">
+                <span><b>${summary.occupiedCount}</b> ocupadas</span>
                 <span><b>${summary.confirmedCount}</b> confirmadas</span>
                 <span><b>${summary.paymentReportedCount}</b> Pix informado</span>
                 <span><b>${summary.pendingCount}</b> aguardando Pix</span>
                 <span><b>${summary.capacity}</b> capacidade</span>
               </div>
-              <div class="admin-capacity-editor">
-                <label>Capacidade <input type="number" min="${summary.confirmedCount || 1}" value="${summary.capacity}" data-capacity-input /></label>
-                <button type="button" data-save-capacity>Salvar capacidade</button>
+
+              <div class="admin-workshop-toolbar">
+                <label>Status
+                  <select data-workshop-status>
+                    ${statusOptions.map(([value,label]) => `<option value="${value}" ${summary.status===value?'selected':''}>${label}</option>`).join('')}
+                  </select>
+                </label>
+                <div class="admin-capacity-quick">
+                  <span>Vagas</span>
+                  <button type="button" data-capacity-delta="-1">−1</button>
+                  <button type="button" data-capacity-delta="1">+1</button>
+                  <button type="button" data-capacity-delta="5">+5</button>
+                </div>
+                <div class="admin-capacity-editor">
+                  <label>Capacidade
+                    <input type="number" min="${summary.occupiedCount || 1}" value="${summary.capacity}" data-capacity-input />
+                  </label>
+                  <button type="button" data-save-capacity>Salvar</button>
+                </div>
               </div>
+
+              <details class="admin-edit">
+                <summary>Editar turma</summary>
+                <form class="admin-edit-form" data-edit-workshop>
+                  <label>Nome<input name="title" value="${esc(summary.title)}" required /></label>
+                  <label class="admin-edit-form__wide">Descrição<input name="shortDescription" value="${esc(summary.short_description || '')}" /></label>
+                  <label>Data<input name="eventDate" type="date" value="${esc(summary.event_date)}" required /></label>
+                  <label>Início<input name="startTime" type="time" value="${esc(String(summary.start_time||'').slice(0,5))}" required /></label>
+                  <label>Fim<input name="endTime" type="time" value="${esc(String(summary.end_time||'').slice(0,5))}" required /></label>
+                  <label>Idade mínima<input name="minimumAge" type="number" min="0" value="${summary.minimum_age}" required /></label>
+                  <label>Valor (R$)<input name="priceReais" value="${priceInput(summary.price_cents)}" required /></label>
+                  <label>Capacidade<input name="capacity" type="number" min="${summary.occupiedCount || 1}" value="${summary.capacity}" required /></label>
+                  <label>Status
+                    <select name="status">${statusOptions.map(([value,label]) => `<option value="${value}" ${summary.status===value?'selected':''}>${label}</option>`).join('')}</select>
+                  </label>
+                  <button type="submit">Salvar alterações</button>
+                  <p data-edit-error hidden></p>
+                </form>
+              </details>
+
               <div class="admin-artwork">
                 <div class="admin-artwork__preview">
                   ${summary.image_url
@@ -325,27 +527,83 @@ async function initAdmin() {
                   <small data-artwork-status></small>
                 </div>
               </div>
+
+              <div class="admin-registration-heading">
+                <div><strong>Inscrições</strong><span>${summary.registrations.length} registros</span></div>
+                <label>Filtrar
+                  <select data-registration-filter>
+                    <option value="all">Todos</option>
+                    <option value="payment_reported">Pix efetuado</option>
+                    <option value="confirmed">Confirmados</option>
+                    <option value="pending_payment">Aguardando Pix</option>
+                    <option value="cancelled">Cancelados</option>
+                  </select>
+                </label>
+              </div>
+
               <div class="admin-registrations">
                 ${summary.registrations.length ? summary.registrations.map(reg => `
-                  <div class="admin-registration" data-registration-id="${esc(reg.id)}">
+                  <div class="admin-registration" data-registration-id="${esc(reg.id)}" data-registration-status="${esc(reg.status)}">
                     <div>
                       <strong>${esc(reg.child_name)}</strong>
-                      <span>${esc(reg.responsible_name)} · ${esc(reg.responsible_whatsapp)}</span>
+                      <span>${esc(reg.responsible_name)}</span>
+                      <a href="${esc(whatsappHref(reg.responsible_whatsapp))}" target="_blank" rel="noopener">WhatsApp: ${esc(reg.responsible_whatsapp)}</a>
                       <small>${esc(reg.responsible_email || '')}</small>
+                      <small>Ref.: ${esc(reg.payment_reference || '')}</small>
                     </div>
                     <span class="admin-status admin-status--${esc(reg.status)}">${esc(statusLabel(reg.status))}</span>
                     <div class="admin-registration__actions">
-                      <button type="button" data-confirm ${canConfirmRegistration(reg, summary) ? '' : 'disabled'}>Confirmar</button>
+                      <button type="button" data-confirm ${canConfirmRegistration(reg) ? '' : 'disabled'}>Confirmar</button>
                       <button type="button" data-cancel ${reg.status === 'cancelled' ? 'disabled' : ''}>Cancelar</button>
                     </div>
                   </div>`).join('') : '<p class="admin-empty">Nenhuma inscrição nesta turma.</p>'}
               </div>
             </article>`).join('')}
         </section>
+
+        <section class="admin-panel admin-audit">
+          <div class="admin-panel__heading">
+            <div><span>HISTÓRICO</span><h2>Últimas alterações administrativas</h2></div>
+            <p>Registro de criação e alterações de oficinas, vagas e status de inscrições.</p>
+          </div>
+          <div class="admin-audit-list">
+            ${auditLog.length ? auditLog.slice(0,20).map(item => `
+              <div class="admin-audit-item">
+                <div><strong>${esc(auditActionLabel(item))}</strong><span>${esc(item.actor_email || 'Administrador')}</span></div>
+                <time>${esc(new Date(item.created_at).toLocaleString('pt-BR'))}</time>
+              </div>`).join('') : '<p class="admin-empty">Nenhuma alteração administrativa registrada ainda.</p>'}
+          </div>
+        </section>
       </main>`;
 
     root.querySelector('[data-logout]').addEventListener('click', () => {
-      sessionStorage.removeItem('socializando-admin-token'); sessionStorage.removeItem('socializando-admin-refresh-token'); token = null; renderLogin();
+      sessionStorage.removeItem('socializando-admin-token');
+      sessionStorage.removeItem('socializando-admin-refresh-token');
+      token = null;
+      renderLogin();
+    });
+
+    root.querySelector('[data-new-workshop]').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const errorNode = root.querySelector('[data-workshop-create-error]');
+      errorNode.hidden = true;
+      try {
+        await api.createSession(buildNewWorkshop({
+          title:data.get('title'),
+          shortDescription:data.get('shortDescription'),
+          eventDate:data.get('eventDate'),
+          startTime:data.get('startTime'),
+          endTime:data.get('endTime'),
+          minimumAge:data.get('minimumAge'),
+          priceReais:data.get('priceReais'),
+          capacity:data.get('capacity'),
+        }), token);
+        await loadDashboard();
+      } catch (error) {
+        errorNode.textContent = error.message;
+        errorNode.hidden = false;
+      }
     });
 
     root.querySelector('[data-new-session]').addEventListener('submit', async (event) => {
@@ -356,25 +614,84 @@ async function initAdmin() {
       errorNode.hidden = true;
       try {
         await api.createSession(buildNewSession(source, {
-          eventDate:data.get('eventDate'), startTime:data.get('startTime'), endTime:data.get('endTime'), capacity:data.get('capacity')
+          eventDate:data.get('eventDate'),
+          startTime:data.get('startTime'),
+          endTime:data.get('endTime'),
+          capacity:data.get('capacity')
         }), token);
         await loadDashboard();
-      } catch (error) { errorNode.textContent = error.message; errorNode.hidden = false; }
+      } catch (error) {
+        errorNode.textContent = error.message;
+        errorNode.hidden = false;
+      }
     });
 
     root.querySelectorAll('.admin-workshop').forEach((card) => {
       const workshop = summaries.find(w => w.id === card.dataset.workshopId);
+
+      card.querySelector('[data-registration-filter]').addEventListener('change', (event) => {
+        const filter = event.target.value;
+        card.querySelectorAll('[data-registration-id]').forEach((row) => {
+          row.hidden = filter !== 'all' && row.dataset.registrationStatus !== filter;
+        });
+      });
+
+      card.querySelector('[data-workshop-status]').addEventListener('change', async (event) => {
+        try {
+          await api.updateWorkshop(workshop.id, { status:event.target.value }, token);
+          await loadDashboard();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+
+      card.querySelector('[data-edit-workshop]').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const errorNode = event.currentTarget.querySelector('[data-edit-error]');
+        errorNode.hidden = true;
+        try {
+          const patch = buildWorkshopPatch({
+            title:data.get('title'),
+            shortDescription:data.get('shortDescription'),
+            eventDate:data.get('eventDate'),
+            startTime:data.get('startTime'),
+            endTime:data.get('endTime'),
+            minimumAge:data.get('minimumAge'),
+            priceReais:data.get('priceReais'),
+            capacity:data.get('capacity'),
+            status:data.get('status'),
+          }, workshop.occupiedCount);
+          await api.updateWorkshop(workshop.id, patch, token);
+          await loadDashboard();
+        } catch (error) {
+          errorNode.textContent = error.message;
+          errorNode.hidden = false;
+        }
+      });
+
       card.addEventListener('click', async (event) => {
         const regNode = event.target.closest('[data-registration-id]');
         try {
           if (event.target.matches('[data-confirm]') && regNode) {
-            await api.updateRegistrationStatus(regNode.dataset.registrationId, 'confirmed', token); await loadDashboard();
+            await api.updateRegistrationStatus(regNode.dataset.registrationId, 'confirmed', token);
+            await loadDashboard();
           } else if (event.target.matches('[data-cancel]') && regNode) {
-            await api.updateRegistrationStatus(regNode.dataset.registrationId, 'cancelled', token); await loadDashboard();
+            await api.updateRegistrationStatus(regNode.dataset.registrationId, 'cancelled', token);
+            await loadDashboard();
+          } else if (event.target.matches('[data-capacity-delta]')) {
+            const capacity = adjustCapacity(workshop.capacity, Number(event.target.dataset.capacityDelta), workshop.occupiedCount);
+            if (capacity !== Number(workshop.capacity)) {
+              await api.updateWorkshop(workshop.id, { capacity }, token);
+              await loadDashboard();
+            }
           } else if (event.target.matches('[data-save-capacity]')) {
             const capacity = Number(card.querySelector('[data-capacity-input]').value);
-            if (capacity < workshop.confirmedCount) throw new Error('A capacidade não pode ser menor que o número de inscrições confirmadas.');
-            await api.updateWorkshop(workshop.id, { capacity }, token); await loadDashboard();
+            if (capacity < workshop.occupiedCount) {
+              throw new Error('A capacidade não pode ser menor que o número de vagas já ocupadas.');
+            }
+            await api.updateWorkshop(workshop.id, { capacity }, token);
+            await loadDashboard();
           } else if (event.target.matches('[data-upload-art]')) {
             const input = card.querySelector('[data-artwork-input]');
             const status = card.querySelector('[data-artwork-status]');
@@ -393,7 +710,7 @@ async function initAdmin() {
             const storagePath = buildArtworkStoragePath(workshop, file);
             status.textContent = 'Enviando arte sem alterações...';
             const publicUrl = await api.uploadArtwork(storagePath, file, token);
-            await api.updateWorkshop(workshop.id, { image_url: publicUrl }, token);
+            await api.updateWorkshop(workshop.id, { image_url:publicUrl }, token);
             status.textContent = 'Arte vinculada com sucesso.';
             await loadDashboard();
           }
@@ -408,7 +725,11 @@ async function initAdmin() {
 
   async function loadDashboard() {
     try {
-      [workshops, registrations] = await Promise.all([api.listWorkshops(token), api.listRegistrations(token)]);
+      [workshops, registrations, auditLog] = await Promise.all([
+        api.listWorkshops(token),
+        api.listRegistrations(token),
+        api.listAuditLog(token),
+      ]);
       renderDashboard();
     } catch (error) {
       sessionStorage.removeItem('socializando-admin-token'); sessionStorage.removeItem('socializando-admin-refresh-token'); token = null;
