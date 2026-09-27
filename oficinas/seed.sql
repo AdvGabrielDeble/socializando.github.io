@@ -60,3 +60,10 @@ on conflict (slug) do update set
   capacity = excluded.capacity,
   status = excluded.status,
   updated_at = now();
+
+
+-- Primeiro administrador aprovado para o módulo.
+-- O acesso é passwordless via Supabase Auth; a lista não é exposta ao cliente.
+insert into public.admin_emails (email, active)
+values ('gabrieldeblegd@gmail.com', true)
+on conflict (email) do update set active = excluded.active;
