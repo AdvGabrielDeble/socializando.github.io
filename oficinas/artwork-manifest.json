@@ -10,7 +10,7 @@
       "bytes": 3585562,
       "width": 1024,
       "height": 1536,
-      "status": "source-verified-pending-github-binary-transfer"
+      "status": "source-verified-binary-in-repository"
     },
     {
       "experience_key": "fabrica-dos-squishy-magicos",
@@ -20,9 +20,9 @@
       "bytes": 3529499,
       "width": 1254,
       "height": 1254,
-      "status": "source-verified-pending-github-binary-transfer"
+      "status": "source-verified-binary-in-repository"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Artes atualizadas aprovadas em 27/09/2026. A nomenclatura pública correta é Squishy. Os PNGs devem ser transferidos sem edição, recorte, recompressão ou conversão."
+  "notes": "Artes atualizadas aprovadas em 27/09/2026. A nomenclatura pública correta é Squishy. Os PNGs foram transferidos para o repositório sem edição, recorte, recompressão ou conversão; a montagem binária foi validada por SHA-256 antes do commit."
 }
