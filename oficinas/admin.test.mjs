@@ -5,7 +5,7 @@ import { summarizeWorkshops, canConfirmRegistration, buildNewSession, getCanonic
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
-  { id:'w2', experience_key:'fabrica-dos-squishs-magicos', slug:'fabrica-dos-squishs-magicos-2026-10-10', title:'Fábrica dos Squishs Mágicos', event_date:'2026-10-10', start_time:'15:30:00', end_time:'17:00:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'squish-10-out.jpeg' },
+  { id:'w2', experience_key:'fabrica-dos-squishy-magicos', slug:'fabrica-dos-squishy-magicos-2026-10-10', title:'Fábrica dos Squishy Mágicos', event_date:'2026-10-10', start_time:'15:30:00', end_time:'17:00:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'assets/oficinas/fabrica-squishy-magicos-2026-10-10.png' },
 ];
 const regs = [
   { id:'r1', workshop_id:'w1', status:'confirmed', child_name:'A' },
@@ -48,10 +48,10 @@ test('canonical 10 October artwork rules are immutable and date-specific', () =>
     event_date: '2026-10-10',
   });
   assert.deepEqual(jurassica, {
-    storagePath: 'expedicao-jurassica-2026-10-10.jpeg',
-    sha256: 'b0727c5769961fb392a43eeab70eaaf394e5efeb72202455b8b82bfa6f03f132',
-    sizeBytes: 479180,
-    mimeType: 'image/jpeg',
+    storagePath: 'expedicao-jurassica-2026-10-10.png',
+    sha256: 'e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454',
+    sizeBytes: 3585562,
+    mimeType: 'image/png',
   });
 
   const future = getCanonicalArtworkRule({
@@ -73,17 +73,17 @@ test('storage path for a future artwork stays tied to its own turma date', () =>
 
 test('artwork file metadata rejects transformations or unexpected canonical bytes', () => {
   assert.throws(() => validateArtworkFileMeta(
-    { name:'arte.jpeg', type:'image/jpeg', size:479179 },
+    { name:'arte.png', type:'image/png', size:3585561 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
   ), /arquivo original aprovado/i);
 
   assert.throws(() => validateArtworkFileMeta(
-    { name:'arte.png', type:'image/png', size:479180 },
+    { name:'arte.jpeg', type:'image/jpeg', size:3585562 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
-  ), /JPEG original aprovado/i);
+  ), /PNG original aprovado/i);
 
   assert.doesNotThrow(() => validateArtworkFileMeta(
-    { name:'arte.jpeg', type:'image/jpeg', size:479180 },
+    { name:'arte.png', type:'image/png', size:3585562 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
   ));
 });
@@ -92,9 +92,9 @@ test('public artwork URL is deterministic and uses the public storage endpoint',
   assert.equal(
     buildPublicArtworkUrl(
       'https://example.supabase.co',
-      'expedicao-jurassica-2026-10-10.jpeg'
+      'expedicao-jurassica-2026-10-10.png'
     ),
-    'https://example.supabase.co/storage/v1/object/public/workshop-artworks/expedicao-jurassica-2026-10-10.jpeg'
+    'https://example.supabase.co/storage/v1/object/public/workshop-artworks/expedicao-jurassica-2026-10-10.png'
   );
 });
 
@@ -150,4 +150,17 @@ test('admin data API never falls back to the publishable key as Bearer', async (
 
   await assert.rejects(() => api.listWorkshops(''), /sessão administrativa inválida/i);
   assert.equal(called, false);
+});
+
+
+test('fabrica squishy canonical artwork uses the updated approved PNG exactly', () => {
+  assert.deepEqual(getCanonicalArtworkRule({
+    experience_key: 'fabrica-dos-squishy-magicos',
+    event_date: '2026-10-10',
+  }), {
+    storagePath: 'fabrica-squishy-magicos-2026-10-10.png',
+    sha256: '2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339',
+    sizeBytes: 3529499,
+    mimeType: 'image/png',
+  });
 });
