@@ -462,6 +462,10 @@ grant select, insert, update on public.workshops to authenticated;
 grant select, update on public.registrations to authenticated;
 revoke all on public.workshop_availability from anon;
 grant select on public.workshop_availability to authenticated;
+revoke all on function public.list_public_workshops() from public;
+revoke all on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) from public;
+revoke all on function public.report_public_payment(uuid,uuid) from public;
+
 grant execute on function public.list_public_workshops() to anon;
 grant execute on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) to anon;
 grant execute on function public.report_public_payment(uuid,uuid) to anon;
