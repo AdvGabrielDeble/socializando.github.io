@@ -40,7 +40,7 @@ Antes de conectar o módulo à LP publicada, ainda são necessários:
 
 - URL do projeto Supabase;
 - chave pública `anon` do Supabase;
-- chave Pix oficial;
+- criação do projeto Supabase e suas credenciais públicas (URL + anon key);
 - dados das turmas adicionais quando forem abertas; a primeira rodada já está definida.
 
 Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no código.
@@ -54,7 +54,9 @@ Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no c�
 
 ## Segunda turma / nova data
 
-A abertura de uma nova turma não cria uma nova oficina visual. O painel reutiliza `experience_key`, título, descrição, preço, idade mínima e a mesma arte canônica; cria apenas uma nova sessão com outro `slug`, data, horário e capacidade. Cada sessão tem inscrições e contador de vagas independentes.
+A abertura de uma nova turma reutiliza `experience_key`, título, descrição, preço e idade mínima, mas cria uma nova sessão com outro `slug`, data, horário e capacidade. Cada sessão tem inscrições e contador de vagas independentes.
+
+As artes aprovadas atuais são datadas. Por isso, uma nova turma em outra data **não herda automaticamente a imagem da turma anterior**: nasce com `image_url = null` até que exista uma arte específica aprovada para aquela data. Isso impede que a LP mostre, por exemplo, uma arte escrita “10 de outubro” para uma turma realizada em outra data.
 
 ## Ativação do backend
 
