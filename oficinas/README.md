@@ -45,6 +45,32 @@ Antes de conectar o módulo à LP publicada, ainda são necessários:
 
 Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no código.
 
+## Dados operacionais já aprovados
+
+- Expedição Jurássica — 10/10/2026, 14h às 15h30, R$ 50,00, a partir de 5 anos, 15 vagas.
+- Fábrica dos Squishs Mágicos — 10/10/2026, 15h30 às 17h, R$ 50,00, a partir de 5 anos, 15 vagas.
+- Chave Pix CNPJ: `59.380.867/0001-62`.
+- WhatsApp oficial: `+55 53 99951-9569`.
+
+## Segunda turma / nova data
+
+A abertura de uma nova turma não cria uma nova oficina visual. O painel reutiliza `experience_key`, título, descrição, preço, idade mínima e a mesma arte canônica; cria apenas uma nova sessão com outro `slug`, data, horário e capacidade. Cada sessão tem inscrições e contador de vagas independentes.
+
+## Ativação do backend
+
+1. Criar um projeto Supabase.
+2. Executar `schema.sql` no SQL Editor.
+3. Executar `seed.sql` para cadastrar as duas turmas iniciais.
+4. Criar o usuário administrativo no Supabase Auth.
+5. Inserir o UUID desse usuário em `public.admin_users`.
+6. Copiar a URL pública do projeto e a chave pública `anon` para `supabase-config.js`.
+7. Nunca inserir a chave `service_role` em arquivos servidos pelo GitHub Pages.
+8. Validar o fluxo completo em branch/teste antes de qualquer merge para `main`.
+
+## Artes canônicas
+
+Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest.json`. As imagens devem ser transferidas byte a byte para os caminhos indicados, sem edição, recorte, recompressão ou conversão. A transferência binária para o repositório ainda é uma pendência técnica; até ela ser concluída, `image_url` permanece nulo no seed para impedir que o sistema aponte para um arquivo inexistente.
+
 ## Regra de publicação
 
 Desenvolver e validar primeiro na branch `feature/oficinas-v4.6.0`. A branch `main` permanece como versão publicada estável até a aprovação final.
