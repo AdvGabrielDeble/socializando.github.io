@@ -47,6 +47,21 @@ export function buildWorkshopCardModel(group) {
   };
 }
 
+export function buildPublicSessionCards(sessions = []) {
+  return [...sessions]
+    .sort((a, b) => `${a.eventDate}T${a.startTime || '00:00'}`.localeCompare(`${b.eventDate}T${b.startTime || '00:00'}`))
+    .map((session) => buildWorkshopCardModel({
+      experienceKey: session.experienceKey || session.slug,
+      title: session.title,
+      shortDescription: session.shortDescription,
+      imageUrl: session.imageUrl || null,
+      ageLabel: session.ageLabel,
+      minimumAge: session.minimumAge,
+      priceCents: session.priceCents,
+      sessions: [session],
+    }));
+}
+
 export function getModuleState({ loading, error, groups }) {
   if (loading) return { kind: 'loading', message: 'Consultando oficinas e vagas...' };
   if (error) return { kind: 'unavailable', message: 'Inscrições online temporariamente indisponíveis.' };
@@ -121,12 +136,12 @@ function cardHtml(model) {
     </article>`;
 }
 
-function renderState(section, state, groups = []) {
+function renderState(section, state, cards = []) {
   const status = section.querySelector('[data-workshops-status]');
   const grid = section.querySelector('[data-workshops-grid]');
   status.textContent = state.message;
   status.hidden = state.kind === 'ready';
-  grid.innerHTML = state.kind === 'ready' ? groups.map((group) => cardHtml(buildWorkshopCardModel(group))).join('') : '';
+  grid.innerHTML = state.kind === 'ready' ? cards.map(cardHtml).join('') : '';
 }
 
 function loadQrCodeLibrary() {
@@ -211,9 +226,9 @@ async function initBrowserModule() {
     return;
   }
 
-  const groups = groupWorkshopSessions(sessions);
-  renderState(section, getModuleState({ loading: false, error: null, groups }), groups);
-  if (!groups.length) return;
+  const cards = buildPublicSessionCards(sessions);
+  renderState(section, getModuleState({ loading: false, error: null, groups: cards }), cards);
+  if (!cards.length) return;
 
   const modal = createModal();
   const sessionById = new Map(sessions.map((session) => [session.id, session]));
