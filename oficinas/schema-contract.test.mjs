@@ -75,3 +75,11 @@ test('public workshop SELECT applies only to anon while admin policies are actio
   assert.match(sql, /create\s+policy\s+"admins can select workshops"[\s\S]*?for\s+select\s+to\s+authenticated/i);
   assert.match(sql, /revoke\s+execute\s+on\s+function\s+public\.is_workshop_admin\(\)\s+from\s+anon/i);
 });
+
+
+test('public RPC grants do not extend to authenticated users', () => {
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.list_public_workshops\(\)\s+to\s+anon\s*;/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.create_public_registration\([^;]+\)\s+to\s+anon\s*;/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+to\s+anon\s*;/i);
+  assert.doesNotMatch(sql, /grant\s+execute\s+on\s+function\s+public\.(?:list_public_workshops|create_public_registration|report_public_payment)[^;]*to\s+[^;]*authenticated/i);
+});
