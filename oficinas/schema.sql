@@ -78,6 +78,12 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.admin_emails (
+  email text primary key check (email = lower(trim(email))),
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 
 -- Artes públicas das oficinas. O bucket permanece dentro da cota gratuita do projeto
 -- e aceita somente arquivos de imagem de até 5 MB. Uploads/alterações são restritos
@@ -108,11 +114,20 @@ language sql
 stable
 security definer
 set search_path = public
-as $$
-  select exists (
-    select 1 from public.admin_users a where a.user_id = auth.uid()
-  );
-$$;
+as $
+  select
+    exists (
+      select 1
+      from public.admin_users a
+      where a.user_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.admin_emails e
+      where e.active = true
+        and e.email = lower(coalesce(auth.jwt()->>'email', ''))
+    );
+$;
 
 create or replace view public.workshop_availability
 with (security_invoker = true)
@@ -350,6 +365,7 @@ $$;
 alter table public.workshops enable row level security;
 alter table public.registrations enable row level security;
 alter table public.admin_users enable row level security;
+alter table public.admin_emails enable row level security;
 
 drop policy if exists "public can read open workshops" on public.workshops;
 create policy "public can read open workshops"
@@ -454,6 +470,7 @@ with check (public.is_workshop_admin());
 
 revoke all on public.registrations from anon;
 revoke all on public.admin_users from anon, authenticated;
+revoke all on public.admin_emails from anon, authenticated;
 revoke all on function public.is_workshop_admin() from public;
 revoke execute on function public.is_workshop_admin() from anon;
 
