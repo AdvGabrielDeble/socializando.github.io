@@ -142,3 +142,10 @@ test('capacity lock happens when a registration first enters an occupied payment
   assert.match(fn, /status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
   assert.match(fn, /for\s+update/i);
 });
+
+
+test('workshop availability view preserves its existing column contract during migration', () => {
+  const view = sql.match(/create\s+or\s+replace\s+view\s+public\.workshop_availability[\s\S]*?group\s+by\s+w\.id\s*;/i)?.[0] || '';
+  assert.match(view, /confirmed_count[\s\S]*?available_spots/i);
+  assert.doesNotMatch(view, /confirmed_count[\s\S]*?occupied_count[\s\S]*?available_spots/i);
+});
