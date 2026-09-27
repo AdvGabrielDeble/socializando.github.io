@@ -48,7 +48,7 @@ Nenhuma dessas informações sensíveis ou operacionais deve ser inventada no c�
 ## Dados operacionais já aprovados
 
 - Expedição Jurássica — 10/10/2026, 14h às 15h30, R$ 50,00, a partir de 5 anos, 15 vagas.
-- Fábrica dos Squishs Mágicos — 10/10/2026, 15h30 às 17h, R$ 50,00, a partir de 5 anos, 15 vagas.
+- Fábrica dos Squishy Mágicos — 10/10/2026, 15h30 às 17h, R$ 50,00, a partir de 5 anos, 15 vagas.
 - Chave Pix CNPJ: `59.380.867/0001-62`.
 - WhatsApp oficial: `+55 53 99951-9569`.
 
@@ -71,7 +71,7 @@ As artes aprovadas atuais são datadas. Por isso, uma nova turma em outra data *
 
 ## Artes canônicas
 
-Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest.json`. As imagens devem ser transferidas byte a byte para os caminhos indicados, sem edição, recorte, recompressão ou conversão. A transferência binária para o repositório ainda é uma pendência técnica; até ela ser concluída, `image_url` permanece nulo no seed para impedir que o sistema aponte para um arquivo inexistente.
+Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest.json`. As imagens devem ser transferidas byte a byte para os caminhos indicados, sem edição, recorte, recompressão ou conversão. A transferência binária dos dois PNGs atualizados para o repositório é a etapa pendente antes de vincular os `image_url` reais no banco.
 
 ## Regra de publicação
 
@@ -90,7 +90,7 @@ As artes aprovadas não são tratadas como miniaturas ou JPGs decorativos. O fro
 - múltiplas turmas permanecem dentro da mesma experiência, mas cada turma conserva seu próprio `image_url`; uma arte com data impressa nunca é reutilizada automaticamente para outra data;
 - quando uma nova turma ainda não possui arte específica, o sistema exibe somente um estado visual institucional neutro, sem fabricar ou alterar a criação existente.
 
-A transferência dos dois JPEGs canônicos para `assets/oficinas/` continua condicionada à preservação byte a byte dos hashes registrados em `artwork-manifest.json`.
+A transferência dos dois PNGs canônicos para `assets/oficinas/` continua condicionada à preservação byte a byte dos hashes registrados em `artwork-manifest.json`.
 
 
 ## Acesso administrativo passwordless
