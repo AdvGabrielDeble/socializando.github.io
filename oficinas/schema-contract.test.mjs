@@ -56,7 +56,7 @@ test('authenticated admin has table privileges needed by the panel while anon do
 test('PL/pgSQL output names do not collide with registration status columns', () => {
   const createFn = sql.match(/create\s+or\s+replace\s+function\s+public\.create_public_registration[\s\S]*?\$\$;/i)?.[0] || '';
   const reportFn = sql.match(/create\s+or\s+replace\s+function\s+public\.report_public_payment[\s\S]*?\$\$;/i)?.[0] || '';
-  assert.match(createFn, /from\s+public\.registrations\s+r[\s\S]*?r\.status\s*=\s*'confirmed'/i);
+  assert.match(createFn, /from\s+public\.registrations\s+r[\s\S]*?r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
   assert.match(reportFn, /update\s+public\.registrations\s+as\s+r[\s\S]*?r\.status\s*=\s*'pending_payment'/i);
 });
 
@@ -127,4 +127,25 @@ test('admin email allowlist enables passwordless first access without exposing t
 
 test('admin authorization SQL function uses a valid tagged dollar quote', () => {
   assert.match(sql, /create\s+or\s+replace\s+function\s+public\.is_workshop_admin\(\)[\s\S]*?as\s+\$admin\$[\s\S]*?\$admin\$;/i);
+});
+
+
+test('reported Pix occupies a workshop spot together with confirmed registrations', () => {
+  assert.match(sql, /count\(r\.id\)\s+filter\s*\(where\s+r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)\s*\)/i);
+  assert.match(sql, /greatest\([\s\S]*?w\.capacity\s*-\s*count\(r\.id\)\s+filter\s*\(where\s+r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)\s*\)/i);
+});
+
+test('capacity lock happens when a registration first enters an occupied payment state', () => {
+  const fn = sql.match(/create\s+or\s+replace\s+function\s+public\.prevent_overbooking\(\)[\s\S]*?\$\$;/i)?.[0] || '';
+  assert.match(fn, /new\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /old\.status\s+not\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /for\s+update/i);
+});
+
+
+test('workshop availability view preserves its existing column contract during migration', () => {
+  const view = sql.match(/create\s+or\s+replace\s+view\s+public\.workshop_availability[\s\S]*?group\s+by\s+w\.id\s*;/i)?.[0] || '';
+  assert.match(view, /confirmed_count[\s\S]*?available_spots/i);
+  assert.doesNotMatch(view, /confirmed_count[\s\S]*?occupied_count[\s\S]*?available_spots/i);
 });

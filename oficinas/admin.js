@@ -90,19 +90,21 @@ export function summarizeWorkshops(workshops = [], registrations = []) {
     const confirmedCount = workshopRegistrations.filter((registration) => registration.status === 'confirmed').length;
     const paymentReportedCount = workshopRegistrations.filter((registration) => registration.status === 'payment_reported').length;
     const pendingCount = workshopRegistrations.filter((registration) => registration.status === 'pending_payment').length;
+    const occupiedCount = confirmedCount + paymentReportedCount;
     return {
       ...workshop,
       registrations: workshopRegistrations,
       confirmedCount,
       paymentReportedCount,
       pendingCount,
-      availableSpots: Math.max(0, Number(workshop.capacity) - confirmedCount),
+      occupiedCount,
+      availableSpots: Math.max(0, Number(workshop.capacity) - occupiedCount),
     };
   });
 }
 
-export function canConfirmRegistration(registration, workshopSummary) {
-  return registration?.status === 'payment_reported' && Number(workshopSummary?.availableSpots) > 0;
+export function canConfirmRegistration(registration) {
+  return registration?.status === 'payment_reported';
 }
 
 export function buildNewSession(source, { eventDate, startTime, endTime, capacity }) {

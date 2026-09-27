@@ -5,6 +5,7 @@ on:
     branches:
       - feature/oficinas-v4.6.0
       - hotfix/v4.6.1-mobile-menu-whatsapp
+      - hotfix/v4.6.2-pix-vaga-dialog
   workflow_dispatch:
 
 jobs:

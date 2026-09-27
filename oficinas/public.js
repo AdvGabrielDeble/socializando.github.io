@@ -117,9 +117,9 @@ export function buildWorkshopWhatsAppMessage({ session, registration, formData }
     `Data de nascimento: ${formatNumericDate(formData?.childBirthDate)}`,
     `Observações: ${notes}`,
     '',
-    `Pagamento: Pix informado — ${formatMoneyText(registration?.amountCents)}`,
+    `Pagamento: Pix efetuado — ${formatMoneyText(registration?.amountCents)}`,
     `Referência: ${String(registration?.paymentReference || '').trim()}`,
-    'Situação: aguardando conferência do pagamento',
+    'Situação: vaga abatida no site — aguardando conferência do pagamento',
   ].join('\n');
 }
 
@@ -254,7 +254,7 @@ function createModal() {
   dialog.className = 'workshop-dialog';
   dialog.innerHTML = `
     <form method="dialog" class="workshop-dialog__shell" data-workshop-form>
-      <button class="workshop-dialog__close" value="cancel" aria-label="Fechar">×</button>
+      <button class="workshop-dialog__close" type="button" data-close-workshop-dialog aria-label="Fechar">×</button>
       <div data-workshop-form-step="form">
         <p class="eyebrow eyebrow--purple">Inscrição</p>
         <h3 data-workshop-title></h3>
@@ -269,7 +269,7 @@ function createModal() {
           <label class="workshop-form-grid__wide">Observações importantes <span>(opcional)</span><textarea name="notes" rows="3"></textarea></label>
         </div>
         <label class="workshop-consent"><input type="checkbox" required /> Li e estou ciente de que os dados serão registrados para organizar a inscrição e encaminhados ao WhatsApp oficial do Socializando para conferência da inscrição e do pagamento.</label>
-        <p class="workshop-payment-warning">O cadastro não reserva a vaga. A vaga será confirmada somente após a equipe conferir o pagamento via Pix.</p>
+        <p class="workshop-payment-warning">O cadastro ainda não ocupa vaga. Ao informar o Pix como efetuado, uma vaga será abatida imediatamente da turma.</p>
         <button class="button button--primary" type="submit">Continuar para o Pix</button>
         <p class="workshop-form-error" data-workshop-error hidden></p>
       </div>
@@ -283,7 +283,7 @@ function createModal() {
           <button class="button button--ghost" type="button" data-copy-pix>Copiar Pix</button>
           <button class="button button--primary" type="button" data-report-payment>Já fiz o Pix — continuar</button>
         </div>
-        <p class="workshop-payment-warning">Informar o pagamento não confirma automaticamente a vaga. A equipe fará a conferência e somente então a vaga será abatida.</p>
+        <p class="workshop-payment-warning">Ao informar o Pix como efetuado, uma vaga será abatida imediatamente. A equipe fará a conferência do pagamento pelo WhatsApp.</p>
         <p class="workshop-form-error" data-pix-error hidden></p>
       </div>
       <div data-workshop-form-step="reported" hidden>
@@ -318,7 +318,16 @@ async function initBrowserModule() {
   if (!cards.length) return;
 
   const modal = createModal();
-  const sessionById = new Map(sessions.map((session) => [session.id, session]));
+  let sessionById = new Map(sessions.map((session) => [session.id, session]));
+
+  const refreshWorkshops = async () => {
+    sessions = await api.listOpenWorkshops();
+    sessionById = new Map(sessions.map((session) => [session.id, session]));
+    const refreshedCards = groupWorkshopSessions(sessions).map(buildWorkshopCardModel);
+    renderState(section, getModuleState({ loading: false, error: null, groups: refreshedCards }), refreshedCards);
+    return refreshedCards;
+  };
+
   let activeSession = null;
   let activeRegistration = null;
   let activeFormData = null;
@@ -359,6 +368,10 @@ async function initBrowserModule() {
     modal.querySelector('[data-workshop-session]').textContent = `${dateFormatter.format(new Date(`${activeSession.eventDate}T12:00:00Z`))} · ${String(activeSession.startTime).slice(0,5)} às ${String(activeSession.endTime).slice(0,5)} · ${activeSession.ageLabel}`;
     modal.querySelector('[name="childAge"]').min = String(activeSession.minimumAge || 5);
     modal.showModal();
+  });
+
+  modal.querySelector('[data-close-workshop-dialog]').addEventListener('click', () => {
+    modal.close('cancel');
   });
 
   const form = modal.querySelector('[data-workshop-form]');
@@ -418,6 +431,7 @@ async function initBrowserModule() {
     errorNode.hidden = true;
     try {
       await api.reportPayment(activeRegistration.registrationId, activeRegistration.publicToken);
+      await refreshWorkshops();
       const whatsappMessage = buildWorkshopWhatsAppMessage({
         session: activeSession,
         registration: activeRegistration,
