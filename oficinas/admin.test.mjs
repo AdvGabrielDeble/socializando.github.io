@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { summarizeWorkshops, canConfirmRegistration, buildNewSession, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl } from './admin.js';
 
 const workshops = [
@@ -95,4 +96,14 @@ test('public artwork URL is deterministic and uses the public storage endpoint',
     ),
     'https://example.supabase.co/storage/v1/object/public/workshop-artworks/expedicao-jurassica-2026-10-10.jpeg'
   );
+});
+
+
+test('admin artwork controls have responsive visual treatment', () => {
+  const css = readFileSync(new URL('./admin.css', import.meta.url), 'utf8');
+  assert.match(css, /\.admin-artwork\s*\{[^}]*display\s*:\s*grid/i);
+  assert.match(css, /\.admin-artwork__preview\s*\{[^}]*border-radius/i);
+  assert.match(css, /\.admin-artwork__preview\s+img\s*\{[^}]*object-fit\s*:\s*contain/i);
+  assert.match(css, /\.admin-artwork__controls\s*\{[^}]*display\s*:\s*grid/i);
+  assert.match(css, /@media\s*\(max-width:\s*900px\)[\s\S]*?\.admin-artwork\s*\{[^}]*grid-template-columns\s*:\s*1fr/i);
 });
