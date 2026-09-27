@@ -14,9 +14,9 @@ const sessions = [
     minimumAge: 5, ageLabel: 'A partir de 5 anos', priceCents: 5000, capacity: 15, status: 'open', imageUrl: 'jurassica.jpeg', availableSpots: 15,
   },
   {
-    id: 's1', experienceKey: 'fabrica-dos-squishs-magicos', slug: 'fabrica-dos-squishs-magicos-2026-10-10', title: 'Fábrica dos Squishs Mágicos',
-    shortDescription: 'Oficina de Paper Squish especial do Dia das Crianças.', eventDate: '2026-10-10', startTime: '15:30:00', endTime: '17:00:00',
-    minimumAge: 5, ageLabel: 'A partir de 5 anos', priceCents: 5000, capacity: 15, status: 'open', imageUrl: 'squish.jpeg', availableSpots: 1,
+    id: 's1', experienceKey: 'fabrica-dos-squishy-magicos', slug: 'fabrica-dos-squishy-magicos-2026-10-10', title: 'Fábrica dos Squishy Mágicos',
+    shortDescription: 'Oficina de Paper Squishy especial do Dia das Crianças.', eventDate: '2026-10-10', startTime: '15:30:00', endTime: '17:00:00',
+    minimumAge: 5, ageLabel: 'A partir de 5 anos', priceCents: 5000, capacity: 15, status: 'open', imageUrl: 'assets/oficinas/fabrica-squishy-magicos-2026-10-10.png', availableSpots: 1,
   },
 ];
 
@@ -73,24 +73,24 @@ test('public cards never reuse a date-stamped artwork across different session d
 
 test('experience themes integrate each artwork with the LP without modifying the source image', () => {
   assert.equal(getExperienceTheme('expedicao-jurassica').className, 'workshop-experience--jurassica');
-  assert.equal(getExperienceTheme('fabrica-dos-squishs-magicos').className, 'workshop-experience--squish');
+  assert.equal(getExperienceTheme('fabrica-dos-squishy-magicos').className, 'workshop-experience--squish');
 });
 
 test('experience panel keeps multiple turmas together and artwork remains session-specific', () => {
   const grouped = groupWorkshopSessions([
-    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.jpeg' },
+    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.png' },
     { ...sessions[1], imageUrl: null },
   ]);
   const model = buildWorkshopCardModel(grouped[0]);
   assert.equal(model.sessions.length, 2);
-  assert.equal(model.sessions[0].imageUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.jpeg');
+  assert.equal(model.sessions[0].imageUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.png');
   assert.equal(model.sessions[1].imageUrl, null);
-  assert.equal(model.activeArtworkUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.jpeg');
+  assert.equal(model.activeArtworkUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.png');
 });
 
 test('experience HTML renders artwork as an integrated visual panel with a live availability bridge', () => {
   const model = buildWorkshopCardModel(groupWorkshopSessions([
-    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.jpeg' },
+    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.png' },
     { ...sessions[1], imageUrl: null },
   ])[0]);
   const html = buildWorkshopExperienceHtml(model);
