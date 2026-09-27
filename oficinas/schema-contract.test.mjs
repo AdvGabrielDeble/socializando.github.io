@@ -102,3 +102,13 @@ test('workshop artwork storage is public-read but admin-write', () => {
   assert.match(sql, /create\s+policy\s+"workshop admins can delete artworks"[\s\S]*?for\s+delete[\s\S]*?public\.is_workshop_admin\(\)/i);
   assert.doesNotMatch(sql, /create\s+policy[^;]*storage\.objects[^;]*to\s+anon[^;]*(?:insert|update|delete)/is);
 });
+
+
+test('PUBLIC function execution is revoked before narrow grants', () => {
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.list_public_workshops\(\)\s+from\s+public/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.create_public_registration\(uuid,text,text,text,text,integer,date,text\)\s+from\s+public/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+from\s+public/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.list_public_workshops\(\)\s+to\s+anon/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.create_public_registration\(uuid,text,text,text,text,integer,date,text\)\s+to\s+anon/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+to\s+anon/i);
+});
