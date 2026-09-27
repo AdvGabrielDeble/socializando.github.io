@@ -29,21 +29,36 @@ export function groupWorkshopSessions(sessions = []) {
   return [...groups.values()];
 }
 
+export function getExperienceTheme(experienceKey) {
+  if (experienceKey === 'expedicao-jurassica') {
+    return { className: 'workshop-experience--jurassica' };
+  }
+  if (experienceKey === 'fabrica-dos-squishs-magicos') {
+    return { className: 'workshop-experience--squish' };
+  }
+  return { className: 'workshop-experience--default' };
+}
+
 export function buildWorkshopCardModel(group) {
+  const sessions = group.sessions.map((session) => ({
+    ...session,
+    dateLabel: dateFormatter.format(new Date(`${session.eventDate}T12:00:00Z`)),
+    timeLabel: `${String(session.startTime || '').slice(0, 5)} às ${String(session.endTime || '').slice(0, 5)}`,
+    availabilityLabel: formatAvailabilityLabel(session.availableSpots),
+    canRegister: session.status === 'open' && Number(session.availableSpots) > 0,
+  }));
+  const firstAvailable = sessions.find((session) => session.canRegister) || sessions[0] || null;
+
   return {
     experienceKey: group.experienceKey,
+    theme: getExperienceTheme(group.experienceKey),
     title: group.title,
     shortDescription: group.shortDescription,
-    imageUrl: group.imageUrl,
     ageLabel: group.ageLabel || `A partir de ${group.minimumAge} anos`,
     priceLabel: money.format((Number(group.priceCents) || 0) / 100),
-    sessions: group.sessions.map((session) => ({
-      ...session,
-      dateLabel: dateFormatter.format(new Date(`${session.eventDate}T12:00:00Z`)),
-      timeLabel: `${String(session.startTime || '').slice(0, 5)} às ${String(session.endTime || '').slice(0, 5)}`,
-      availabilityLabel: formatAvailabilityLabel(session.availableSpots),
-      canRegister: session.status === 'open' && Number(session.availableSpots) > 0,
-    })),
+    activeArtworkUrl: firstAvailable?.imageUrl || null,
+    activeAvailabilityLabel: firstAvailable?.availabilityLabel || '',
+    sessions,
   };
 }
 
@@ -109,26 +124,52 @@ function sessionButton(session, selected) {
   const disabled = !session.canRegister;
   return `
     <button class="workshop-session ${selected ? 'is-selected' : ''}" type="button"
-      data-session-id="${escapeHtml(session.id)}" ${disabled ? 'disabled' : ''}>
+      data-session-id="${escapeHtml(session.id)}"
+      data-art-url="${escapeHtml(session.imageUrl || '')}"
+      data-availability-label="${escapeHtml(session.availabilityLabel)}"
+      ${disabled ? 'disabled' : ''}>
       <strong>${escapeHtml(session.dateLabel)}</strong>
       <span>${escapeHtml(session.timeLabel)}</span>
       <em>${escapeHtml(session.availabilityLabel)}</em>
     </button>`;
 }
 
-function cardHtml(model) {
+export function buildWorkshopExperienceHtml(model) {
   const firstAvailable = model.sessions.find((session) => session.canRegister) || model.sessions[0];
-  const image = model.imageUrl ? `<img class="workshop-card__art" src="${escapeHtml(model.imageUrl)}" alt="Arte oficial da oficina ${escapeHtml(model.title)}" />` : '';
+  const image = model.activeArtworkUrl
+    ? `<img class="workshop-card__art workshop-experience__art" data-workshop-art src="${escapeHtml(model.activeArtworkUrl)}" alt="Arte oficial da oficina ${escapeHtml(model.title)}" />`
+    : `<img class="workshop-card__art workshop-experience__art" data-workshop-art alt="Arte oficial da oficina ${escapeHtml(model.title)}" hidden />`;
+  const noArtHidden = model.activeArtworkUrl ? 'hidden' : '';
+
   return `
-    <article class="workshop-card" data-experience="${escapeHtml(model.experienceKey)}">
-      ${image}
-      <div class="workshop-card__body">
-        <div class="workshop-card__meta"><span>${escapeHtml(model.ageLabel)}</span><span>${escapeHtml(model.priceLabel)}</span></div>
+    <article class="workshop-experience ${escapeHtml(model.theme.className)}" data-experience="${escapeHtml(model.experienceKey)}">
+      <div class="workshop-experience__visual">
+        <div class="workshop-experience__visual-frame">
+          ${image}
+          <div class="workshop-experience__visual-fallback" data-workshop-art-fallback ${noArtHidden}>
+            <img src="assets/logo-wordmark-large.png" alt="" aria-hidden="true" />
+            <strong>${escapeHtml(model.title)}</strong>
+            <span>Nova turma</span>
+          </div>
+        </div>
+        <div class="workshop-experience__availability" data-workshop-availability>
+          <span>Vagas</span>
+          <strong>${escapeHtml(model.activeAvailabilityLabel)}</strong>
+        </div>
+      </div>
+
+      <div class="workshop-experience__content">
+        <div class="workshop-experience__meta">
+          <span>${escapeHtml(model.ageLabel)}</span>
+          <span>${escapeHtml(model.priceLabel)}</span>
+        </div>
         <h3>${escapeHtml(model.title)}</h3>
-        <p>${escapeHtml(model.shortDescription)}</p>
-        <div class="workshop-card__sessions" aria-label="Turmas disponíveis">
+        <p class="workshop-experience__description">${escapeHtml(model.shortDescription)}</p>
+        <div class="workshop-experience__sessions-label">Turmas disponíveis</div>
+        <div class="workshop-card__sessions workshop-experience__sessions" aria-label="Turmas disponíveis">
           ${model.sessions.map((session) => sessionButton(session, session.id === firstAvailable?.id)).join('')}
         </div>
+        <p class="workshop-experience__notice">A vaga é confirmada somente após a conferência do pagamento via Pix.</p>
         <button class="button button--primary workshop-register" type="button" data-register-session="${escapeHtml(firstAvailable?.id || '')}" ${firstAvailable?.canRegister ? '' : 'disabled'}>
           ${firstAvailable?.canRegister ? 'Garantir inscrição' : 'Turma esgotada'}
         </button>
@@ -141,7 +182,7 @@ function renderState(section, state, cards = []) {
   const grid = section.querySelector('[data-workshops-grid]');
   status.textContent = state.message;
   status.hidden = state.kind === 'ready';
-  grid.innerHTML = state.kind === 'ready' ? cards.map(cardHtml).join('') : '';
+  grid.innerHTML = state.kind === 'ready' ? cards.map(buildWorkshopExperienceHtml).join('') : '';
 }
 
 function loadQrCodeLibrary() {
@@ -226,7 +267,7 @@ async function initBrowserModule() {
     return;
   }
 
-  const cards = buildPublicSessionCards(sessions);
+  const cards = groupWorkshopSessions(sessions).map(buildWorkshopCardModel);
   renderState(section, getModuleState({ loading: false, error: null, groups: cards }), cards);
   if (!cards.length) return;
 
@@ -238,12 +279,28 @@ async function initBrowserModule() {
   section.addEventListener('click', (event) => {
     const sessionButtonNode = event.target.closest('[data-session-id]');
     if (sessionButtonNode) {
-      const card = sessionButtonNode.closest('.workshop-card');
+      const card = sessionButtonNode.closest('.workshop-experience');
       card.querySelectorAll('[data-session-id]').forEach((node) => node.classList.toggle('is-selected', node === sessionButtonNode));
       const registerButton = card.querySelector('[data-register-session]');
       registerButton.dataset.registerSession = sessionButtonNode.dataset.sessionId;
       registerButton.disabled = sessionButtonNode.disabled;
       registerButton.textContent = sessionButtonNode.disabled ? 'Turma esgotada' : 'Garantir inscrição';
+
+      const art = card.querySelector('[data-workshop-art]');
+      const fallback = card.querySelector('[data-workshop-art-fallback]');
+      const artUrl = sessionButtonNode.dataset.artUrl || '';
+      if (artUrl) {
+        art.src = artUrl;
+        art.hidden = false;
+        fallback.hidden = true;
+      } else {
+        art.removeAttribute('src');
+        art.hidden = true;
+        fallback.hidden = false;
+      }
+
+      const availability = card.querySelector('[data-workshop-availability] strong');
+      if (availability) availability.textContent = sessionButtonNode.dataset.availabilityLabel || '';
       return;
     }
 
