@@ -61,6 +61,22 @@ export function buildPublicArtworkUrl(supabaseUrl, storagePath) {
   return `${base}/storage/v1/object/public/workshop-artworks/${encoded}`;
 }
 
+
+export function readMagicLinkSession(hash = '') {
+  const raw = String(hash || '').replace(/^#/, '');
+  if (!raw) return null;
+  const params = new URLSearchParams(raw);
+  const accessToken = params.get('access_token');
+  if (!accessToken) return null;
+  return {
+    accessToken,
+    refreshToken: params.get('refresh_token') || '',
+    expiresIn: Number(params.get('expires_in') || 0),
+    tokenType: params.get('token_type') || 'bearer',
+    type: params.get('type') || '',
+  };
+}
+
 async function sha256File(file) {
   if (!globalThis.crypto?.subtle) throw new Error('Seu navegador não suporta a validação segura da arte.');
   const bytes = await file.arrayBuffer();
@@ -122,14 +138,22 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
   const authHeaders = (token) => ({ apikey: anonKey, Authorization: `Bearer ${token || anonKey}`, 'Content-Type': 'application/json' });
 
   return {
-    async signIn(email, password) {
-      const response = await fetchImpl(`${url}/auth/v1/token?grant_type=password`, {
-        method: 'POST', headers: { apikey: anonKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+    async requestMagicLink(email, redirectTo) {
+      const normalizedEmail = String(email || '').trim().toLowerCase();
+      if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('E-mail administrativo inválido.');
+      const redirect = String(redirectTo || '').trim();
+      if (!redirect) throw new Error('URL de retorno administrativo indisponível.');
+
+      const response = await fetchImpl(`${url}/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, {
+        method: 'POST',
+        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          create_user: true,
+        }),
       });
-      const body = await parse(response);
-      if (!body?.access_token) throw new Error('Login administrativo inválido.');
-      return body.access_token;
+      await parse(response);
+      return { ok: true };
     },
     async listWorkshops(token) {
       return parse(await fetchImpl(`${url}/rest/v1/workshops?select=*&order=event_date.asc,start_time.asc`, { headers: authHeaders(token) }));
@@ -194,32 +218,48 @@ async function initAdmin() {
     return;
   }
 
-  let token = sessionStorage.getItem('socializando-admin-token');
+  let token;
+  const callbackSession = readMagicLinkSession(globalThis.location?.hash || '');
+  if (callbackSession?.accessToken) {
+    sessionStorage.setItem('socializando-admin-token', callbackSession.accessToken);
+    sessionStorage.setItem('socializando-admin-refresh-token', callbackSession.refreshToken || '');
+    token = callbackSession.accessToken;
+    if (globalThis.history?.replaceState && globalThis.location) {
+      globalThis.history.replaceState(null, '', globalThis.location.pathname + globalThis.location.search);
+    }
+  } else {
+    token = sessionStorage.getItem('socializando-admin-token');
+  }
+
   let workshops = [];
   let registrations = [];
 
-  const renderLogin = () => {
+  const renderLogin = (message = '') => {
     root.innerHTML = `
       <section class="admin-login">
         <img src="../assets/logo-wordmark-large.png" alt="Socializando" />
         <h1>Gestão de oficinas</h1>
-        <p>Acesso restrito à equipe.</p>
+        <p>Acesso restrito à equipe. O login é feito por link seguro enviado ao e-mail autorizado.</p>
         <form data-login-form>
-          <label>E-mail<input name="email" type="email" required autocomplete="username" /></label>
-          <label>Senha<input name="password" type="password" required autocomplete="current-password" /></label>
-          <button type="submit">Entrar</button>
+          <label>E-mail<input name="email" type="email" required autocomplete="email" value="gabrieldeblegd@gmail.com" /></label>
+          <button type="submit">Enviar link de acesso</button>
+          <p class="admin-login__success" data-login-success ${message ? '' : 'hidden'}>${esc(message)}</p>
           <p data-login-error hidden></p>
         </form>
       </section>`;
+
     root.querySelector('[data-login-form]').addEventListener('submit', async (event) => {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       const errorNode = root.querySelector('[data-login-error]');
+      const successNode = root.querySelector('[data-login-success]');
       errorNode.hidden = true;
+      successNode.hidden = true;
       try {
-        token = await api.signIn(data.get('email'), data.get('password'));
-        sessionStorage.setItem('socializando-admin-token', token);
-        await loadDashboard();
+        const redirectTo = 'https://www.projetosocializando.com.br/oficinas/admin.html';
+        await api.requestMagicLink(data.get('email'), redirectTo);
+        successNode.textContent = 'Link de acesso enviado. Abra o e-mail e clique no link para entrar.';
+        successNode.hidden = false;
       } catch (error) {
         errorNode.textContent = error.message;
         errorNode.hidden = false;
@@ -299,7 +339,7 @@ async function initAdmin() {
       </main>`;
 
     root.querySelector('[data-logout]').addEventListener('click', () => {
-      sessionStorage.removeItem('socializando-admin-token'); token = null; renderLogin();
+      sessionStorage.removeItem('socializando-admin-token'); sessionStorage.removeItem('socializando-admin-refresh-token'); token = null; renderLogin();
     });
 
     root.querySelector('[data-new-session]').addEventListener('submit', async (event) => {
@@ -365,7 +405,7 @@ async function initAdmin() {
       [workshops, registrations] = await Promise.all([api.listWorkshops(token), api.listRegistrations(token)]);
       renderDashboard();
     } catch (error) {
-      sessionStorage.removeItem('socializando-admin-token'); token = null;
+      sessionStorage.removeItem('socializando-admin-token'); sessionStorage.removeItem('socializando-admin-refresh-token'); token = null;
       renderLogin();
       const errorNode = root.querySelector('[data-login-error]');
       if (errorNode) { errorNode.textContent = `Acesso não autorizado: ${error.message}`; errorNode.hidden = false; }
