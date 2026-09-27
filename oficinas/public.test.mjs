@@ -154,3 +154,24 @@ test('reported payment step includes explicit WhatsApp control handoff', () => {
   assert.match(source, /Enviar dados da inscrição no WhatsApp/);
   assert.match(source, /buildWorkshopWhatsAppUrl/);
 });
+
+
+test('dialog close control bypasses form validation and closes explicitly', () => {
+  const source = readFileSync(new URL('./public.js', import.meta.url), 'utf8');
+  assert.match(source, /class="workshop-dialog__close"[^>]*type="button"[^>]*data-close-workshop-dialog/i);
+  assert.match(source, /querySelector\('\[data-close-workshop-dialog\]'\)\.addEventListener\('click',[\s\S]*?modal\.close\('cancel'\)/i);
+});
+
+test('reported Pix refreshes public availability before WhatsApp handoff', () => {
+  const source = readFileSync(new URL('./public.js', import.meta.url), 'utf8');
+  const reportBlock = source.match(/\[data-report-payment\][\s\S]*?catch \(error\)/i)?.[0] || '';
+  assert.match(reportBlock, /await\s+api\.reportPayment/i);
+  assert.match(reportBlock, /await\s+refreshWorkshops\(\)/i);
+  assert.match(reportBlock, /data-whatsapp-registration/);
+});
+
+test('payment copy explains that reporting the Pix immediately consumes one available spot', () => {
+  const source = readFileSync(new URL('./public.js', import.meta.url), 'utf8');
+  assert.match(source, /Ao informar o Pix como efetuado, uma vaga será abatida imediatamente/i);
+  assert.match(source, /Pagamento: Pix efetuado —/i);
+});
