@@ -10,7 +10,7 @@
       "bytes": 479180,
       "width": 1024,
       "height": 1536,
-      "status": "source-verified-pending-binary-transfer"
+      "status": "source-verified-local-preview-integrated-pending-github-binary-transfer"
     },
     {
       "experience_key": "fabrica-dos-squishs-magicos",
@@ -20,7 +20,9 @@
       "bytes": 312099,
       "width": 1254,
       "height": 1254,
-      "status": "source-verified-pending-binary-transfer"
+      "status": "source-verified-local-preview-integrated-pending-github-binary-transfer"
     }
-  ]
+  ],
+  "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
+  "notes": "Os JPEGs foram validados localmente por SHA-256 e usados sem alteração na prévia integrada. O seed permanece com image_url nulo até os binários existirem no repositório."
 }
