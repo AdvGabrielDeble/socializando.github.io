@@ -140,7 +140,7 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $sql$
   select
     w.id, w.experience_key, w.slug, w.title, w.short_description,
     w.event_date, w.start_time, w.end_time, w.minimum_age, w.age_label,
@@ -152,7 +152,7 @@ as $
   where w.status in ('open','sold_out')
   group by w.id
   order by w.event_date, w.start_time;
-$;
+$sql$;
 
 create or replace function public.prevent_overbooking()
 returns trigger
