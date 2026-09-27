@@ -128,3 +128,17 @@ test('admin email allowlist enables passwordless first access without exposing t
 test('admin authorization SQL function uses a valid tagged dollar quote', () => {
   assert.match(sql, /create\s+or\s+replace\s+function\s+public\.is_workshop_admin\(\)[\s\S]*?as\s+\$admin\$[\s\S]*?\$admin\$;/i);
 });
+
+
+test('reported Pix occupies a workshop spot together with confirmed registrations', () => {
+  assert.match(sql, /count\(r\.id\)\s+filter\s*\(where\s+r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)\s*\)/i);
+  assert.match(sql, /greatest\([\s\S]*?w\.capacity\s*-\s*count\(r\.id\)\s+filter\s*\(where\s+r\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)\s*\)/i);
+});
+
+test('capacity lock happens when a registration first enters an occupied payment state', () => {
+  const fn = sql.match(/create\s+or\s+replace\s+function\s+public\.prevent_overbooking\(\)[\s\S]*?\$\$;/i)?.[0] || '';
+  assert.match(fn, /new\.status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /old\.status\s+not\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /status\s+in\s*\(\s*'payment_reported'\s*,\s*'confirmed'\s*\)/i);
+  assert.match(fn, /for\s+update/i);
+});
