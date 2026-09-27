@@ -39,7 +39,7 @@ insert into public.workshops (
   5000,
   15,
   'open',
-  null
+  '/assets/oficinas/expedicao-jurassica-2026-10-10.png'
 ),
 (
   'fabrica-dos-squishy-magicos',
@@ -54,7 +54,7 @@ insert into public.workshops (
   5000,
   15,
   'open',
-  null
+  '/assets/oficinas/fabrica-squishy-magicos-2026-10-10.png'
 )
 on conflict (slug) do update set
   experience_key = excluded.experience_key,
@@ -68,6 +68,7 @@ on conflict (slug) do update set
   price_cents = excluded.price_cents,
   capacity = excluded.capacity,
   status = excluded.status,
+  image_url = excluded.image_url,
   updated_at = now();
 
 
