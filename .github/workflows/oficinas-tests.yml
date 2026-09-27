@@ -1,9 +1,10 @@
-name: Oficinas v4.6.0 tests
+name: Oficinas v4.6.x tests
 
 on:
   push:
     branches:
       - feature/oficinas-v4.6.0
+      - hotfix/v4.6.1-mobile-menu-whatsapp
   workflow_dispatch:
 
 jobs:

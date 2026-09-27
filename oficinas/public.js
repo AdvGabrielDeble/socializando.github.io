@@ -85,6 +85,50 @@ export function getModuleState({ loading, error, groups }) {
   return { kind: 'ready', message: '' };
 }
 
+
+function formatNumericDate(value) {
+  const raw = String(value || '').trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : (raw || 'Não informada');
+}
+
+function formatMoneyText(amountCents) {
+  return money.format((Number(amountCents) || 0) / 100).replace(/\u00a0/g, ' ');
+}
+
+export function buildWorkshopWhatsAppMessage({ session, registration, formData }) {
+  const title = String(session?.title || 'Oficina').trim().toUpperCase();
+  const start = String(session?.startTime || '').slice(0, 5);
+  const end = String(session?.endTime || '').slice(0, 5);
+  const age = String(formData?.childAge || '').trim();
+  const notes = String(formData?.notes || '').trim() || 'Não informadas';
+
+  return [
+    `*OFICINA: ${title}*`,
+    `Data: ${formatNumericDate(session?.eventDate)}`,
+    `Horário: ${start} às ${end}`,
+    '',
+    `Responsável: ${String(formData?.responsibleName || '').trim()}`,
+    `WhatsApp: ${String(formData?.responsibleWhatsapp || '').trim()}`,
+    `E-mail: ${String(formData?.responsibleEmail || '').trim()}`,
+    '',
+    `Criança: ${String(formData?.childName || '').trim()}`,
+    `Idade: ${age} anos`,
+    `Data de nascimento: ${formatNumericDate(formData?.childBirthDate)}`,
+    `Observações: ${notes}`,
+    '',
+    `Pagamento: Pix informado — ${formatMoneyText(registration?.amountCents)}`,
+    `Referência: ${String(registration?.paymentReference || '').trim()}`,
+    'Situação: aguardando conferência do pagamento',
+  ].join('\n');
+}
+
+export function buildWorkshopWhatsAppUrl(number, message) {
+  const normalized = String(number || '').replace(/\D/g, '');
+  if (!normalized) throw new Error('WhatsApp oficial indisponível.');
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(String(message || ''))}`;
+}
+
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 }
@@ -224,7 +268,7 @@ function createModal() {
           <label>Data de nascimento <span>(opcional)</span><input name="childBirthDate" type="date" /></label>
           <label class="workshop-form-grid__wide">Observações importantes <span>(opcional)</span><textarea name="notes" rows="3"></textarea></label>
         </div>
-        <label class="workshop-consent"><input type="checkbox" required /> Li e estou ciente de que os dados serão usados para organizar a inscrição e a participação na oficina, nos termos da LGPD.</label>
+        <label class="workshop-consent"><input type="checkbox" required /> Li e estou ciente de que os dados serão registrados para organizar a inscrição e encaminhados ao WhatsApp oficial do Socializando para conferência da inscrição e do pagamento.</label>
         <p class="workshop-payment-warning">O cadastro não reserva a vaga. A vaga será confirmada somente após a equipe conferir o pagamento via Pix.</p>
         <button class="button button--primary" type="submit">Continuar para o Pix</button>
         <p class="workshop-form-error" data-workshop-error hidden></p>
@@ -237,16 +281,17 @@ function createModal() {
         <label>Pix Copia e Cola<textarea readonly rows="5" data-pix-code></textarea></label>
         <div class="workshop-pix-actions">
           <button class="button button--ghost" type="button" data-copy-pix>Copiar Pix</button>
-          <button class="button button--primary" type="button" data-report-payment>Já fiz o Pix</button>
+          <button class="button button--primary" type="button" data-report-payment>Já fiz o Pix — continuar</button>
         </div>
         <p class="workshop-payment-warning">Informar o pagamento não confirma automaticamente a vaga. A equipe fará a conferência e somente então a vaga será abatida.</p>
         <p class="workshop-form-error" data-pix-error hidden></p>
       </div>
       <div data-workshop-form-step="reported" hidden>
-        <p class="eyebrow eyebrow--purple">Recebemos seu aviso</p>
+        <p class="eyebrow eyebrow--purple">Último passo</p>
         <h3>Pagamento aguardando conferência.</h3>
-        <p>Assim que a equipe confirmar o Pix, sua inscrição ocupará uma das vagas da turma.</p>
-        <button class="button button--primary" value="done">Fechar</button>
+        <p>Seus dados já foram registrados. Agora abra o WhatsApp: a mensagem de controle estará pronta com oficina, responsável, criança e pagamento. Basta conferir e enviar.</p>
+        <a class="button button--primary workshop-whatsapp-action" href="#" target="_blank" rel="noopener" data-whatsapp-registration>Enviar dados da inscrição no WhatsApp</a>
+        <button class="button button--ghost" value="done">Fechar</button>
       </div>
     </form>`;
   document.body.append(dialog);
@@ -276,6 +321,7 @@ async function initBrowserModule() {
   const sessionById = new Map(sessions.map((session) => [session.id, session]));
   let activeSession = null;
   let activeRegistration = null;
+  let activeFormData = null;
 
   section.addEventListener('click', (event) => {
     const sessionButtonNode = event.target.closest('[data-session-id]');
@@ -322,16 +368,19 @@ async function initBrowserModule() {
     const errorNode = modal.querySelector('[data-workshop-error]');
     errorNode.hidden = true;
     const data = new FormData(form);
+    activeFormData = {
+      responsibleName: data.get('responsibleName'),
+      responsibleWhatsapp: data.get('responsibleWhatsapp'),
+      responsibleEmail: data.get('responsibleEmail'),
+      childName: data.get('childName'),
+      childAge: data.get('childAge'),
+      childBirthDate: data.get('childBirthDate'),
+      notes: data.get('notes'),
+    };
     try {
       activeRegistration = await api.createRegistration({
         workshopId: activeSession.id,
-        responsibleName: data.get('responsibleName'),
-        responsibleWhatsapp: data.get('responsibleWhatsapp'),
-        responsibleEmail: data.get('responsibleEmail'),
-        childName: data.get('childName'),
-        childAge: data.get('childAge'),
-        childBirthDate: data.get('childBirthDate'),
-        notes: data.get('notes'),
+        ...activeFormData,
       });
       const payload = buildPixPayload({
         key: OFICINAS_CONFIG.pix.key,
@@ -369,6 +418,15 @@ async function initBrowserModule() {
     errorNode.hidden = true;
     try {
       await api.reportPayment(activeRegistration.registrationId, activeRegistration.publicToken);
+      const whatsappMessage = buildWorkshopWhatsAppMessage({
+        session: activeSession,
+        registration: activeRegistration,
+        formData: activeFormData,
+      });
+      const whatsappUrl = buildWorkshopWhatsAppUrl(OFICINAS_CONFIG.whatsapp.number, whatsappMessage);
+      const whatsappLink = modal.querySelector('[data-whatsapp-registration]');
+      whatsappLink.href = whatsappUrl;
+
       modal.querySelector('[data-workshop-form-step="pix"]').hidden = true;
       modal.querySelector('[data-workshop-form-step="reported"]').hidden = false;
     } catch (error) {
@@ -380,6 +438,9 @@ async function initBrowserModule() {
   modal.addEventListener('close', () => {
     form.reset();
     activeRegistration = null;
+    activeFormData = null;
+    const whatsappLink = modal.querySelector('[data-whatsapp-registration]');
+    if (whatsappLink) whatsappLink.href = '#';
     modal.querySelector('[data-workshop-form-step="form"]').hidden = false;
     modal.querySelector('[data-workshop-form-step="pix"]').hidden = true;
     modal.querySelector('[data-workshop-form-step="reported"]').hidden = true;

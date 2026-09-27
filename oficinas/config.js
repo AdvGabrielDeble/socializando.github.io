@@ -9,6 +9,9 @@ export const OFICINAS_CONFIG = {
     merchantName: "SOCIALIZANDO",
     merchantCity: "BAGE"
   },
+  whatsapp: {
+    number: "5553999519569"
+  },
   defaults: {
     minimumAge: 5,
     capacityPerWorkshop: 15

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupWorkshopSessions, buildWorkshopCardModel, buildPublicSessionCards, getModuleState, getExperienceTheme, buildWorkshopExperienceHtml } from './public.js';
+import { readFileSync } from 'node:fs';
+import { groupWorkshopSessions, buildWorkshopCardModel, buildPublicSessionCards, getModuleState, getExperienceTheme, buildWorkshopExperienceHtml, buildWorkshopWhatsAppMessage, buildWorkshopWhatsAppUrl } from './public.js';
 
 const sessions = [
   {
@@ -102,4 +103,54 @@ test('experience HTML renders artwork as an integrated visual panel with a live 
   assert.match(html, /data-art-url=/);
   assert.match(html, /workshop-experience__content/);
   assert.match(html, /Turmas disponíveis/);
+});
+
+
+test('WhatsApp control message starts with the workshop name and includes form and payment data in order', () => {
+  const message = buildWorkshopWhatsAppMessage({
+    session: sessions[0],
+    registration: {
+      paymentReference: 'SJABC123',
+      amountCents: 5000,
+      registrationId: 'reg-1',
+      publicToken: 'SECRET-TOKEN-NOT-SHARED',
+    },
+    formData: {
+      responsibleName: 'Maria da Silva',
+      responsibleWhatsapp: '53999999999',
+      responsibleEmail: 'maria@example.com',
+      childName: 'João da Silva',
+      childAge: 7,
+      childBirthDate: '2019-04-12',
+      notes: 'Alergia informada pela responsável',
+    },
+  });
+
+  const lines = message.split('\n');
+  assert.equal(lines[0], '*OFICINA: EXPEDIÇÃO JURÁSSICA*');
+  assert.match(message, /Data: 10\/10\/2026/);
+  assert.match(message, /Horário: 14:00 às 15:30/);
+  assert.match(message, /Responsável: Maria da Silva/);
+  assert.match(message, /WhatsApp: 53999999999/);
+  assert.match(message, /E-mail: maria@example\.com/);
+  assert.match(message, /Criança: João da Silva/);
+  assert.match(message, /Idade: 7 anos/);
+  assert.match(message, /Data de nascimento: 12\/04\/2019/);
+  assert.match(message, /Observações: Alergia informada pela responsável/);
+  assert.match(message, /Pagamento: Pix informado — R\$ 50,00/);
+  assert.match(message, /Referência: SJABC123/);
+  assert.match(message, /Situação: aguardando conferência do pagamento/);
+  assert.doesNotMatch(message, /SECRET-TOKEN-NOT-SHARED/);
+});
+
+test('WhatsApp URL targets the official Socializando number with the complete encoded message', () => {
+  const url = buildWorkshopWhatsAppUrl('5553999519569', 'Mensagem de controle');
+  assert.equal(url, 'https://wa.me/5553999519569?text=Mensagem%20de%20controle');
+});
+
+test('reported payment step includes explicit WhatsApp control handoff', () => {
+  const source = readFileSync(new URL('./public.js', import.meta.url), 'utf8');
+  assert.match(source, /data-whatsapp-registration/);
+  assert.match(source, /Enviar dados da inscrição no WhatsApp/);
+  assert.match(source, /buildWorkshopWhatsAppUrl/);
 });

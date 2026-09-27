@@ -173,3 +173,15 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - painel administrativo protegido por autenticação passwordless;
 - testes automatizados e validações de integridade dos assets incluídos;
 - desenvolvimento mantido na branch `feature/oficinas-v4.6.0` até aprovação final de publicação.
+
+
+## Ajuste v4.6.1 — Mobile + controle de inscrições no WhatsApp
+
+- corrigido o menu mobile: a barra superior passa a ter botão `Menu` e exibe Projeto, Habilidades, Temporada, Oficinas, Galeria e Dúvidas;
+- o menu mobile fecha ao selecionar uma seção e também por `Esc`;
+- preservado o menu desktop existente;
+- após o responsável informar que realizou o Pix, o registro permanece salvo no Supabase e o site prepara uma mensagem de controle para o WhatsApp oficial `+55 53 99951-9569`;
+- a mensagem inicia pelo nome da oficina e inclui data, horário, responsável, WhatsApp, e-mail, criança, idade, nascimento, observações, valor do Pix, referência e situação do pagamento;
+- o token público da inscrição nunca é enviado ao WhatsApp;
+- o consentimento do formulário informa expressamente o encaminhamento dos dados ao WhatsApp oficial para conferência da inscrição e do pagamento;
+- assets alterados receberam cache-busting `v=461` para evitar que celulares mantenham CSS/JS antigos em cache.
