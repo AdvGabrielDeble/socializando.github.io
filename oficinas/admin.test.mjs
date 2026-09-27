@@ -14,21 +14,22 @@ const regs = [
   { id:'r4', workshop_id:'w1', status:'cancelled', child_name:'D' },
 ];
 
-test('summarizeWorkshops computes confirmed and available by turma', () => {
+test('summarizeWorkshops computes occupied and available by turma', () => {
   const rows = summarizeWorkshops(workshops, regs);
   assert.equal(rows[0].confirmedCount, 1);
   assert.equal(rows[0].paymentReportedCount, 1);
   assert.equal(rows[0].pendingCount, 1);
-  assert.equal(rows[0].availableSpots, 14);
+  assert.equal(rows[0].occupiedCount, 2);
+  assert.equal(rows[0].availableSpots, 13);
   assert.equal(rows[1].availableSpots, 15);
 });
 
-test('canConfirmRegistration only permits payment_reported while capacity remains', () => {
+test('canConfirmRegistration permits payment_reported even when it already occupies the last spot', () => {
   const row = summarizeWorkshops(workshops, regs)[0];
   assert.equal(canConfirmRegistration(regs[1], row), true);
   assert.equal(canConfirmRegistration(regs[2], row), false);
   assert.equal(canConfirmRegistration(regs[0], row), false);
-  assert.equal(canConfirmRegistration(regs[1], { ...row, availableSpots: 0 }), false);
+  assert.equal(canConfirmRegistration(regs[1], { ...row, availableSpots: 0 }), true);
 });
 
 test('buildNewSession reuses experience data but never reuses a date-stamped artwork for another date', () => {
