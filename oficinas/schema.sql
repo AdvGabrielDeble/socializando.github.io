@@ -148,8 +148,9 @@ select
   w.status,
   w.image_url,
   count(r.id) filter (where r.status = 'confirmed')::integer as confirmed_count,
+  count(r.id) filter (where r.status in ('payment_reported','confirmed'))::integer as occupied_count,
   greatest(
-    w.capacity - count(r.id) filter (where r.status = 'confirmed')::integer,
+    w.capacity - count(r.id) filter (where r.status in ('payment_reported','confirmed'))::integer,
     0
   ) as available_spots
 from public.workshops w
@@ -185,7 +186,7 @@ as $sql$
     w.event_date, w.start_time, w.end_time, w.minimum_age, w.age_label,
     w.price_cents, w.capacity, w.status, w.image_url,
     count(r.id) filter (where r.status = 'confirmed')::integer as confirmed_count,
-    greatest(w.capacity - count(r.id) filter (where r.status = 'confirmed')::integer, 0) as available_spots
+    greatest(w.capacity - count(r.id) filter (where r.status in ('payment_reported','confirmed'))::integer, 0) as available_spots
   from public.workshops w
   left join public.registrations r on r.workshop_id = w.id
   where w.status in ('open','sold_out')
@@ -200,24 +201,27 @@ set search_path = public
 as $$
 declare
   v_capacity integer;
-  v_confirmed integer;
+  v_occupied integer;
 begin
-  if new.status = 'confirmed' and old.status is distinct from 'confirmed' then
+  if new.status in ('payment_reported','confirmed')
+     and old.status not in ('payment_reported','confirmed') then
     select capacity into v_capacity
     from public.workshops
     where id = new.workshop_id
     for update;
 
-    select count(*)::integer into v_confirmed
+    select count(*)::integer into v_occupied
     from public.registrations
     where workshop_id = new.workshop_id
-      and status = 'confirmed'
+      and status in ('payment_reported','confirmed')
       and id <> new.id;
 
-    if v_confirmed >= v_capacity then
+    if v_occupied >= v_capacity then
       raise exception 'Oficina sem vagas disponíveis';
     end if;
+  end if;
 
+  if new.status = 'confirmed' and old.status is distinct from 'confirmed' then
     new.confirmed_at := coalesce(new.confirmed_at, now());
     new.confirmed_by := coalesce(new.confirmed_by, auth.uid());
   end if;
@@ -306,7 +310,8 @@ begin
 
   if (
     select count(*) from public.registrations r
-    where r.workshop_id = p_workshop_id and r.status = 'confirmed'
+    where r.workshop_id = p_workshop_id
+      and r.status in ('payment_reported','confirmed')
   ) >= v_workshop.capacity then
     raise exception 'Oficina sem vagas disponíveis';
   end if;
