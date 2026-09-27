@@ -20,3 +20,19 @@ test('top navigation contains Oficinas in the approved order', () => {
     { href: '#duvidas', label: 'Dúvidas' },
   ]);
 });
+
+
+test('workshop section is statically integrated between Temporada and Galeria', () => {
+  const temporada = html.indexOf('id="temporada"');
+  const oficinas = html.indexOf('id="oficinas"');
+  const galeria = html.indexOf('id="galeria"');
+
+  assert.ok(temporada >= 0, 'Temporada section must exist');
+  assert.ok(oficinas > temporada, 'Oficinas must come after Temporada');
+  assert.ok(galeria > oficinas, 'Galeria must come after Oficinas');
+
+  const section = html.slice(oficinas, galeria);
+  assert.match(section, /data-workshops-status/);
+  assert.match(section, /data-workshops-grid/);
+  assert.match(section, /Experiências especiais do Socializando/);
+});
