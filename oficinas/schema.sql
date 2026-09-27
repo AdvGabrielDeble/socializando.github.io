@@ -331,23 +331,36 @@ drop policy if exists "public can read open workshops" on public.workshops;
 create policy "public can read open workshops"
 on public.workshops
 for select
-to anon, authenticated
+to anon
 using (status in ('open','sold_out'));
 
 drop policy if exists "admins can read all workshops" on public.workshops;
-create policy "admins can read all workshops"
+drop policy if exists "admins can manage workshops" on public.workshops;
+
+create policy "admins can select workshops"
 on public.workshops
 for select
 to authenticated
 using (public.is_workshop_admin());
 
-drop policy if exists "admins can manage workshops" on public.workshops;
-create policy "admins can manage workshops"
+create policy "admins can insert workshops"
 on public.workshops
-for all
+for insert
+to authenticated
+with check (public.is_workshop_admin());
+
+create policy "admins can update workshops"
+on public.workshops
+for update
 to authenticated
 using (public.is_workshop_admin())
 with check (public.is_workshop_admin());
+
+create policy "admins can delete workshops"
+on public.workshops
+for delete
+to authenticated
+using (public.is_workshop_admin());
 
 drop policy if exists "admins can read registrations" on public.registrations;
 create policy "admins can read registrations"
@@ -367,6 +380,7 @@ with check (public.is_workshop_admin());
 revoke all on public.registrations from anon;
 revoke all on public.admin_users from anon, authenticated;
 revoke all on function public.is_workshop_admin() from public;
+revoke execute on function public.is_workshop_admin() from anon;
 
 grant select on public.workshops to anon;
 grant select, insert, update on public.workshops to authenticated;
