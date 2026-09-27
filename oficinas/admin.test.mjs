@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, buildNewSession, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, buildNewSession, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, readMagicLinkSession } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -106,4 +106,36 @@ test('admin artwork controls have responsive visual treatment', () => {
   assert.match(css, /\.admin-artwork__preview\s+img\s*\{[^}]*object-fit\s*:\s*contain/i);
   assert.match(css, /\.admin-artwork__controls\s*\{[^}]*display\s*:\s*grid/i);
   assert.match(css, /@media\s*\(max-width:\s*900px\)[\s\S]*?\.admin-artwork\s*\{[^}]*grid-template-columns\s*:\s*1fr/i);
+});
+
+
+test('passwordless admin requests a magic link to the canonical admin page', async () => {
+  let request;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok:true, status:200, async json(){ return {}; } };
+    },
+  });
+
+  await api.requestMagicLink('gabrieldeblegd@gmail.com', 'https://www.projetosocializando.com.br/oficinas/admin.html');
+  assert.match(request.url, /\/auth\/v1\/otp\?redirect_to=/);
+  assert.equal(request.options.headers.apikey, 'sb_publishable_example');
+  assert.equal(request.options.headers.Authorization, undefined);
+  const body = JSON.parse(request.options.body);
+  assert.equal(body.email, 'gabrieldeblegd@gmail.com');
+  assert.equal(body.create_user, true);
+});
+
+test('magic-link callback session is read from URL hash without exposing it in the page', () => {
+  const session = readMagicLinkSession('#access_token=abc123&expires_in=3600&refresh_token=ref456&token_type=bearer&type=magiclink');
+  assert.deepEqual(session, {
+    accessToken:'abc123',
+    refreshToken:'ref456',
+    expiresIn:3600,
+    tokenType:'bearer',
+    type:'magiclink',
+  });
+  assert.equal(readMagicLinkSession('#error=access_denied'), null);
 });
