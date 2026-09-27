@@ -67,3 +67,11 @@ test('public workshop SQL function uses a valid tagged dollar quote', () => {
   assert.match(fn, /\$sql\$;/i);
   assert.doesNotMatch(fn, /as\s+\$\s*\n/i);
 });
+
+
+test('public workshop SELECT applies only to anon while admin policies are action-specific', () => {
+  assert.match(sql, /create\s+policy\s+"public can read open workshops"[\s\S]*?for\s+select\s+to\s+anon\s+using/i);
+  assert.doesNotMatch(sql, /create\s+policy\s+"admins can manage workshops"[\s\S]*?for\s+all/i);
+  assert.match(sql, /create\s+policy\s+"admins can select workshops"[\s\S]*?for\s+select\s+to\s+authenticated/i);
+  assert.match(sql, /revoke\s+execute\s+on\s+function\s+public\.is_workshop_admin\(\)\s+from\s+anon/i);
+});
