@@ -366,7 +366,11 @@ with check (public.is_workshop_admin());
 
 revoke all on public.registrations from anon;
 revoke all on public.admin_users from anon, authenticated;
-grant select on public.workshops to anon, authenticated;
+revoke all on function public.is_workshop_admin() from public;
+
+grant select on public.workshops to anon;
+grant select, insert, update on public.workshops to authenticated;
+grant select, update on public.registrations to authenticated;
 revoke all on public.workshop_availability from anon;
 grant select on public.workshop_availability to authenticated;
 grant execute on function public.list_public_workshops() to anon, authenticated;
