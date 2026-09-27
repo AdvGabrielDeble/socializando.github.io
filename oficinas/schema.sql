@@ -148,7 +148,6 @@ select
   w.status,
   w.image_url,
   count(r.id) filter (where r.status = 'confirmed')::integer as confirmed_count,
-  count(r.id) filter (where r.status in ('payment_reported','confirmed'))::integer as occupied_count,
   greatest(
     w.capacity - count(r.id) filter (where r.status in ('payment_reported','confirmed'))::integer,
     0
