@@ -1,3 +1,73 @@
+const CANONICAL_ARTWORK_RULES = Object.freeze({
+  'expedicao-jurassica|2026-10-10': Object.freeze({
+    storagePath: 'expedicao-jurassica-2026-10-10.jpeg',
+    sha256: 'b0727c5769961fb392a43eeab70eaaf394e5efeb72202455b8b82bfa6f03f132',
+    sizeBytes: 479180,
+    mimeType: 'image/jpeg',
+  }),
+  'fabrica-dos-squishs-magicos|2026-10-10': Object.freeze({
+    storagePath: 'fabrica-squishs-magicos-2026-10-10.jpeg',
+    sha256: '591ea6a7843cbb39b24b82bfb8904083ddf38b808ff24f09f11fb0871f188e9d',
+    sizeBytes: 312099,
+    mimeType: 'image/jpeg',
+  }),
+});
+
+export function getCanonicalArtworkRule(workshop) {
+  if (!workshop?.experience_key || !workshop?.event_date) return null;
+  return CANONICAL_ARTWORK_RULES[`${workshop.experience_key}|${workshop.event_date}`] || null;
+}
+
+function artworkExtension(file) {
+  const mime = String(file?.type || '').toLowerCase();
+  if (mime === 'image/jpeg') return 'jpeg';
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  return '';
+}
+
+export function validateArtworkFileMeta(file, workshop) {
+  if (!file) throw new Error('Selecione uma arte para a turma.');
+  const ext = artworkExtension(file);
+  if (!ext) throw new Error('Formato inválido. Use JPEG, PNG ou WEBP.');
+  if (Number(file.size) <= 0 || Number(file.size) > 5 * 1024 * 1024) {
+    throw new Error('A arte deve ter no máximo 5 MB.');
+  }
+
+  const rule = getCanonicalArtworkRule(workshop);
+  if (rule) {
+    if (String(file.type).toLowerCase() !== rule.mimeType) {
+      throw new Error('Para esta turma, envie o JPEG original aprovado.');
+    }
+    if (Number(file.size) !== rule.sizeBytes) {
+      throw new Error('O arquivo não corresponde ao arquivo original aprovado.');
+    }
+  }
+  return true;
+}
+
+export function buildArtworkStoragePath(workshop, file) {
+  const rule = getCanonicalArtworkRule(workshop);
+  if (rule) return rule.storagePath;
+  const ext = artworkExtension(file);
+  if (!ext) throw new Error('Formato de arte não suportado.');
+  if (!workshop?.experience_key || !workshop?.event_date) throw new Error('Turma inválida para vincular arte.');
+  return `${workshop.experience_key}-${workshop.event_date}.${ext}`;
+}
+
+export function buildPublicArtworkUrl(supabaseUrl, storagePath) {
+  const base = String(supabaseUrl || '').replace(/\/$/, '');
+  const encoded = String(storagePath || '').split('/').map(encodeURIComponent).join('/');
+  return `${base}/storage/v1/object/public/workshop-artworks/${encoded}`;
+}
+
+async function sha256File(file) {
+  if (!globalThis.crypto?.subtle) throw new Error('Seu navegador não suporta a validação segura da arte.');
+  const bytes = await file.arrayBuffer();
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export function summarizeWorkshops(workshops = [], registrations = []) {
   return workshops.map((workshop) => {
     const workshopRegistrations = registrations.filter((registration) => registration.workshop_id === workshop.id);
@@ -38,7 +108,7 @@ export function buildNewSession(source, { eventDate, startTime, endTime, capacit
   };
 }
 
-function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetchImpl = globalThis.fetch } = {}) {
+export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetchImpl = globalThis.fetch } = {}) {
   const url = String(config?.url || '').replace(/\/$/, '');
   const anonKey = String(config?.anonKey || '').trim();
   if (!url || !anonKey) throw new Error('Configuração Supabase ainda não definida.');
@@ -81,6 +151,21 @@ function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetchImpl =
       return parse(await fetchImpl(`${url}/rest/v1/workshops?id=eq.${encodeURIComponent(id)}`, {
         method: 'PATCH', headers: { ...authHeaders(token), Prefer: 'return=representation' }, body: JSON.stringify(patch),
       }));
+    },
+    async uploadArtwork(storagePath, file, token) {
+      const encodedPath = String(storagePath).split('/').map(encodeURIComponent).join('/');
+      const response = await fetchImpl(`${url}/storage/v1/object/workshop-artworks/${encodedPath}`, {
+        method: 'POST',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': file.type,
+          'x-upsert': 'true',
+        },
+        body: file,
+      });
+      await parse(response);
+      return buildPublicArtworkUrl(url, storagePath);
     },
   };
 }
@@ -180,6 +265,20 @@ async function initAdmin() {
                 <label>Capacidade <input type="number" min="${summary.confirmedCount || 1}" value="${summary.capacity}" data-capacity-input /></label>
                 <button type="button" data-save-capacity>Salvar capacidade</button>
               </div>
+              <div class="admin-artwork">
+                <div class="admin-artwork__preview">
+                  ${summary.image_url
+                    ? `<img src="${esc(summary.image_url)}" alt="Arte vinculada a ${esc(summary.title)} em ${esc(dateLabel(summary.event_date))}" />`
+                    : '<div class="admin-artwork__empty">Sem arte vinculada a esta turma.</div>'}
+                </div>
+                <div class="admin-artwork__controls">
+                  <strong>Arte desta turma</strong>
+                  <span>O arquivo é enviado sem edição, recorte ou recompressão.</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" data-artwork-input />
+                  <button type="button" data-upload-art>Vincular arte</button>
+                  <small data-artwork-status></small>
+                </div>
+              </div>
               <div class="admin-registrations">
                 ${summary.registrations.length ? summary.registrations.map(reg => `
                   <div class="admin-registration" data-registration-id="${esc(reg.id)}">
@@ -230,8 +329,33 @@ async function initAdmin() {
             const capacity = Number(card.querySelector('[data-capacity-input]').value);
             if (capacity < workshop.confirmedCount) throw new Error('A capacidade não pode ser menor que o número de inscrições confirmadas.');
             await api.updateWorkshop(workshop.id, { capacity }, token); await loadDashboard();
+          } else if (event.target.matches('[data-upload-art]')) {
+            const input = card.querySelector('[data-artwork-input]');
+            const status = card.querySelector('[data-artwork-status]');
+            const file = input?.files?.[0];
+            validateArtworkFileMeta(file, workshop);
+
+            const rule = getCanonicalArtworkRule(workshop);
+            status.textContent = 'Validando arquivo original...';
+            if (rule) {
+              const hash = await sha256File(file);
+              if (hash !== rule.sha256) {
+                throw new Error('A arte selecionada não é o arquivo original aprovado desta oficina.');
+              }
+            }
+
+            const storagePath = buildArtworkStoragePath(workshop, file);
+            status.textContent = 'Enviando arte sem alterações...';
+            const publicUrl = await api.uploadArtwork(storagePath, file, token);
+            await api.updateWorkshop(workshop.id, { image_url: publicUrl }, token);
+            status.textContent = 'Arte vinculada com sucesso.';
+            await loadDashboard();
           }
-        } catch (error) { alert(error.message); }
+        } catch (error) {
+          const status = card.querySelector('[data-artwork-status]');
+          if (status && event.target.matches('[data-upload-art]')) status.textContent = error.message;
+          else alert(error.message);
+        }
       });
     });
   };
