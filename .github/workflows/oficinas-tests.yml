@@ -6,6 +6,7 @@ on:
       - feature/oficinas-v4.6.0
       - hotfix/v4.6.1-mobile-menu-whatsapp
       - hotfix/v4.6.2-pix-vaga-dialog
+      - feature/v4.7.0-admin-oficinas
   workflow_dispatch:
 
 jobs:
