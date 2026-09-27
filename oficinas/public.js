@@ -56,6 +56,7 @@ export function buildWorkshopCardModel(group) {
     shortDescription: group.shortDescription,
     ageLabel: group.ageLabel || `A partir de ${group.minimumAge} anos`,
     priceLabel: money.format((Number(group.priceCents) || 0) / 100),
+    imageUrl: firstAvailable?.imageUrl || null,
     activeArtworkUrl: firstAvailable?.imageUrl || null,
     activeAvailabilityLabel: firstAvailable?.availabilityLabel || '',
     sessions,
