@@ -75,3 +75,20 @@ test('backend error is propagated and never replaced by fake availability', asyn
   });
   await assert.rejects(() => api.listOpenWorkshops(), /backend offline/);
 });
+
+
+test('publishable key is not sent as a Bearer token on anonymous REST calls', async () => {
+  let headers;
+  const api = createWorkshopApi({
+    supabaseUrl: 'https://example.supabase.co',
+    supabaseAnonKey: 'sb_publishable_example',
+    fetchImpl: async (_url, options) => {
+      headers = options.headers;
+      return response([]);
+    },
+  });
+
+  await api.listOpenWorkshops();
+  assert.equal(headers.apikey, 'sb_publishable_example');
+  assert.equal(headers.Authorization, undefined);
+});
