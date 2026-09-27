@@ -5,7 +5,7 @@ export const OFICINAS_CONFIG = {
   pix: {
     keyType: "CNPJ",
     key: "59.380.867/0001-62",
-    amountCents: 5000,
+    amountCents: 4500,
     merchantName: "SOCIALIZANDO",
     merchantCity: "BAGE"
   },
