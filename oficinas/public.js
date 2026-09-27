@@ -33,7 +33,7 @@ export function getExperienceTheme(experienceKey) {
   if (experienceKey === 'expedicao-jurassica') {
     return { className: 'workshop-experience--jurassica' };
   }
-  if (experienceKey === 'fabrica-dos-squishs-magicos') {
+  if (experienceKey === 'fabrica-dos-squishy-magicos') {
     return { className: 'workshop-experience--squish' };
   }
   return { className: 'workshop-experience--default' };
