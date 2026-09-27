@@ -336,6 +336,10 @@ using (status in ('open','sold_out'));
 
 drop policy if exists "admins can read all workshops" on public.workshops;
 drop policy if exists "admins can manage workshops" on public.workshops;
+drop policy if exists "admins can select workshops" on public.workshops;
+drop policy if exists "admins can insert workshops" on public.workshops;
+drop policy if exists "admins can update workshops" on public.workshops;
+drop policy if exists "admins can delete workshops" on public.workshops;
 
 create policy "admins can select workshops"
 on public.workshops
