@@ -1,4 +1,4 @@
-const WHATSAPP_NUMBER = "5553999575359";
+const WHATSAPP_NUMBER = "5553999519569";
 const WHATSAPP_MESSAGE = encodeURIComponent(
   "Olá! Gostaria de receber informações sobre a próxima temporada do Socializando."
 );
