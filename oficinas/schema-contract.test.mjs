@@ -36,3 +36,10 @@ test('only authenticated admins can list and update registrations', () => {
   assert.match(sql, /for\s+select\s+to\s+authenticated\s+using\s*\(public\.is_workshop_admin\(\)\)/i);
   assert.match(sql, /for\s+update\s+to\s+authenticated\s+using\s*\(public\.is_workshop_admin\(\)\)/i);
 });
+
+
+test('public availability is exposed by safe RPC without registration table access', () => {
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.list_public_workshops\s*\(\s*\)/i);
+  assert.match(sql, /grant\s+execute\s+on\s+function\s+public\.list_public_workshops\(\)\s+to\s+anon/i);
+  assert.doesNotMatch(sql, /grant\s+select\s+on\s+public\.workshop_availability\s+to\s+anon/i);
+});
