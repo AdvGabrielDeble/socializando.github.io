@@ -76,3 +76,18 @@ Os hashes, dimensões e nomes de destino estão registrados em `artwork-manifest
 ## Regra de publicação
 
 Desenvolver e validar primeiro na branch `feature/oficinas-v4.6.0`. A branch `main` permanece como versão publicada estável até a aprovação final.
+
+
+## Integração visual das artes
+
+As artes aprovadas não são tratadas como miniaturas ou JPGs decorativos. O frontend usa um painel experiencial integrado à LP:
+
+- composição desktop em duas áreas, com a arte canônica ocupando a zona visual e a operação de vagas/inscrição ocupando a zona funcional;
+- paleta contextual por experiência, limitada ao entorno do módulo e sem redesenhar a identidade global da LP;
+- contador de vagas posicionado na transição entre arte e conteúdo funcional;
+- arte exibida inteira, sem `object-fit: cover`, sem proporção forçada, sem recorte e sem recompressão;
+- mobile em composição vertical: arte inteira → ponte de disponibilidade → dados/inscrição;
+- múltiplas turmas permanecem dentro da mesma experiência, mas cada turma conserva seu próprio `image_url`; uma arte com data impressa nunca é reutilizada automaticamente para outra data;
+- quando uma nova turma ainda não possui arte específica, o sistema exibe somente um estado visual institucional neutro, sem fabricar ou alterar a criação existente.
+
+A transferência dos dois JPEGs canônicos para `assets/oficinas/` continua condicionada à preservação byte a byte dos hashes registrados em `artwork-manifest.json`.
