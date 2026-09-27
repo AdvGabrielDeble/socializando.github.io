@@ -241,7 +241,7 @@ async function initAdmin() {
         <h1>Gestão de oficinas</h1>
         <p>Acesso restrito à equipe. O login é feito por link seguro enviado ao e-mail autorizado.</p>
         <form data-login-form>
-          <label>E-mail<input name="email" type="email" required autocomplete="email" value="gabrieldeblegd@gmail.com" /></label>
+          <label>E-mail<input name="email" type="email" required autocomplete="email" value="gabrieldeblegd@gmail.com" readonly /></label>
           <button type="submit">Enviar link de acesso</button>
           <p class="admin-login__success" data-login-success ${message ? '' : 'hidden'}>${esc(message)}</p>
           <p data-login-error hidden></p>
