@@ -135,7 +135,11 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
     if (!response.ok) throw new Error(body?.message || body?.error_description || body?.hint || `Erro HTTP ${response.status}`);
     return body;
   };
-  const authHeaders = (token) => ({ apikey: anonKey, Authorization: `Bearer ${token || anonKey}`, 'Content-Type': 'application/json' });
+  const authHeaders = (token) => {
+    const sessionToken = String(token || '').trim();
+    if (!sessionToken) throw new Error('Sessão administrativa inválida.');
+    return { apikey: anonKey, Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' };
+  };
 
   return {
     async requestMagicLink(email, redirectTo) {
