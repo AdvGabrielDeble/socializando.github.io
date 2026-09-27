@@ -150,3 +150,9 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - página inicial recebeu apenas links internos no rodapé, para evitar páginas órfãs;
 - dados estruturados reforçados com `LocalBusiness`, `WebPage`, `BreadcrumbList` e `FAQPage`;
 - mantidos assets, animação principal, WhatsApp e design-base da LP.
+
+
+## Ajuste v4.5.2 — atualização do WhatsApp
+- número oficial de WhatsApp atualizado para +55 53 99951-9569;
+- número técnico configurado como `5553999519569`;
+- mantidos layout, SEO, páginas internas, animações e demais conteúdos sem alterações.
