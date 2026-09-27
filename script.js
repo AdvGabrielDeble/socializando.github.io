@@ -62,6 +62,35 @@ const setupHeader = () => {
   window.addEventListener("scroll", onScroll, { passive: true });
 };
 
+const setupMobileNavigation = () => {
+  const toggle = document.querySelector("[data-nav-toggle]");
+  const nav = document.querySelector("#main-nav");
+  if (!toggle || !nav) return;
+
+  const close = () => {
+    nav.classList.remove("is-open");
+    toggle.setAttribute("aria-expanded", "false");
+  };
+
+  toggle.addEventListener("click", () => {
+    const willOpen = !nav.classList.contains("is-open");
+    nav.classList.toggle("is-open", willOpen);
+    toggle.setAttribute("aria-expanded", String(willOpen));
+  });
+
+  nav.querySelectorAll('a[href^="#"]').forEach((link) => {
+    link.addEventListener("click", close);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") close();
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 840) close();
+  });
+};
+
 const setupTilt = () => {
   document.querySelectorAll(".tilt-card").forEach((card) => {
     card.addEventListener("mousemove", (event) => {
@@ -85,6 +114,7 @@ window.addEventListener("load", () => {
   bindWhatsAppLinks();
   setupReveal();
   setupHeader();
+  setupMobileNavigation();
   setupTilt();
   setupGalleryStage();
 });
