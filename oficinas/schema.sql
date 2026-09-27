@@ -125,7 +125,7 @@ as $
       select 1
       from public.admin_emails e
       where e.active = true
-        and e.email = lower(coalesce(auth.jwt()->>'email', ''))
+        and e.email = lower(auth.jwt()->>'email')
     );
 $;
 
