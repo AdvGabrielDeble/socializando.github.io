@@ -91,3 +91,14 @@ test('schema can be safely reapplied without duplicate admin policies', () => {
   assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can update workshops"\s+on\s+public\.workshops/i);
   assert.match(sql, /drop\s+policy\s+if\s+exists\s+"admins can delete workshops"\s+on\s+public\.workshops/i);
 });
+
+
+test('workshop artwork storage is public-read but admin-write', () => {
+  assert.match(sql, /insert\s+into\s+storage\.buckets[\s\S]*?'workshop-artworks'[\s\S]*?true/i);
+  assert.match(sql, /file_size_limit[\s\S]*?5242880/i);
+  assert.match(sql, /allowed_mime_types[\s\S]*?image\/jpeg/i);
+  assert.match(sql, /create\s+policy\s+"workshop admins can upload artworks"[\s\S]*?on\s+storage\.objects[\s\S]*?for\s+insert[\s\S]*?to\s+authenticated[\s\S]*?bucket_id\s*=\s*'workshop-artworks'[\s\S]*?public\.is_workshop_admin\(\)/i);
+  assert.match(sql, /create\s+policy\s+"workshop admins can update artworks"[\s\S]*?for\s+update[\s\S]*?public\.is_workshop_admin\(\)/i);
+  assert.match(sql, /create\s+policy\s+"workshop admins can delete artworks"[\s\S]*?for\s+delete[\s\S]*?public\.is_workshop_admin\(\)/i);
+  assert.doesNotMatch(sql, /create\s+policy[^;]*storage\.objects[^;]*to\s+anon[^;]*(?:insert|update|delete)/is);
+});
