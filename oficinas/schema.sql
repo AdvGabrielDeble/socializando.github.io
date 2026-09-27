@@ -78,6 +78,30 @@ create table if not exists public.admin_users (
   created_at timestamptz not null default now()
 );
 
+
+-- Artes públicas das oficinas. O bucket permanece dentro da cota gratuita do projeto
+-- e aceita somente arquivos de imagem de até 5 MB. Uploads/alterações são restritos
+-- a usuários administrativos do módulo; leitura pública ocorre pelo endpoint público
+-- do próprio Storage.
+insert into storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+) values (
+  'workshop-artworks',
+  'workshop-artworks',
+  true,
+  5242880,
+  array['image/jpeg','image/png','image/webp']
+)
+on conflict (id) do update set
+  name = excluded.name,
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 create or replace function public.is_workshop_admin()
 returns boolean
 language sql
@@ -365,6 +389,53 @@ on public.workshops
 for delete
 to authenticated
 using (public.is_workshop_admin());
+
+
+-- Storage: leitura pública decorre do bucket público; escrita exige admin autenticado.
+drop policy if exists "workshop admins can read artworks" on storage.objects;
+drop policy if exists "workshop admins can upload artworks" on storage.objects;
+drop policy if exists "workshop admins can update artworks" on storage.objects;
+drop policy if exists "workshop admins can delete artworks" on storage.objects;
+
+create policy "workshop admins can read artworks"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'workshop-artworks'
+  and public.is_workshop_admin()
+);
+
+create policy "workshop admins can upload artworks"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'workshop-artworks'
+  and public.is_workshop_admin()
+);
+
+create policy "workshop admins can update artworks"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'workshop-artworks'
+  and public.is_workshop_admin()
+)
+with check (
+  bucket_id = 'workshop-artworks'
+  and public.is_workshop_admin()
+);
+
+create policy "workshop admins can delete artworks"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'workshop-artworks'
+  and public.is_workshop_admin()
+);
 
 drop policy if exists "admins can read registrations" on public.registrations;
 create policy "admins can read registrations"
