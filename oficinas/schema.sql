@@ -114,7 +114,7 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $admin$
   select
     exists (
       select 1
@@ -127,7 +127,7 @@ as $
       where e.active = true
         and e.email = lower(auth.jwt()->>'email')
     );
-$;
+$admin$;
 
 create or replace view public.workshop_availability
 with (security_invoker = true)
