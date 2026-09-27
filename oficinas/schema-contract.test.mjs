@@ -123,3 +123,8 @@ test('admin email allowlist enables passwordless first access without exposing t
   assert.doesNotMatch(sql, /create\s+policy[^;]*on\s+public\.admin_emails/is);
   assert.match(sql, /revoke\s+all\s+on\s+public\.admin_emails\s+from\s+anon\s*,\s*authenticated/i);
 });
+
+
+test('admin authorization SQL function uses a valid tagged dollar quote', () => {
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.is_workshop_admin\(\)[\s\S]*?as\s+\$admin\$[\s\S]*?\$admin\$;/i);
+});
