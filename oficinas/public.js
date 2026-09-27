@@ -1,6 +1,6 @@
 import { createRuntimeWorkshopApi } from './api.js';
 import { buildPixPayload, formatAvailabilityLabel } from './core.js';
-import { OFICINAS_CONFIG } from './config.js';
+import { OFICINAS_CONFIG } from './config.js?v=472';
 
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
