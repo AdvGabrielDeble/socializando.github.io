@@ -107,6 +107,105 @@ export function canConfirmRegistration(registration) {
   return registration?.status === 'payment_reported';
 }
 
+
+function slugify(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function reaisToCents(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 0;
+  const normalized = raw
+    .replace(/\s/g, '')
+    .replace(/^R\$/i, '')
+    .replace(/\./g, '')
+    .replace(',', '.');
+  const number = Number(normalized);
+  if (!Number.isFinite(number) || number < 0) throw new Error('Valor inválido.');
+  return Math.round(number * 100);
+}
+
+export function adjustCapacity(currentCapacity, delta, occupiedCount = 0) {
+  const current = Math.max(1, Number(currentCapacity) || 1);
+  const occupied = Math.max(0, Number(occupiedCount) || 0);
+  const next = Math.trunc(current + Number(delta || 0));
+  return Math.max(occupied || 1, next);
+}
+
+export function buildNewWorkshop({
+  title,
+  shortDescription,
+  eventDate,
+  startTime,
+  endTime,
+  minimumAge,
+  priceReais,
+  capacity,
+}) {
+  const cleanTitle = String(title || '').trim();
+  const experienceKey = slugify(cleanTitle);
+  if (!cleanTitle || !experienceKey || !eventDate) throw new Error('Preencha nome e data da nova oficina.');
+  const age = Math.max(0, Number(minimumAge) || 0);
+  const spots = Math.max(1, Number(capacity) || 1);
+
+  return {
+    experience_key: experienceKey,
+    slug: `${experienceKey}-${eventDate}`,
+    title: cleanTitle,
+    short_description: String(shortDescription || '').trim() || null,
+    event_date: eventDate,
+    start_time: startTime || null,
+    end_time: endTime || null,
+    minimum_age: age,
+    age_label: `A partir de ${age} anos`,
+    price_cents: reaisToCents(priceReais),
+    capacity: spots,
+    status: 'open',
+    image_url: null,
+  };
+}
+
+export function buildWorkshopPatch({
+  title,
+  shortDescription,
+  eventDate,
+  startTime,
+  endTime,
+  minimumAge,
+  priceReais,
+  capacity,
+  status,
+}, occupiedCount = 0) {
+  const occupied = Math.max(0, Number(occupiedCount) || 0);
+  const spots = Math.max(1, Number(capacity) || 1);
+  if (spots < occupied) {
+    throw new Error(`A capacidade não pode ficar abaixo das ${occupied} vagas já ocupadas.`);
+  }
+  const age = Math.max(0, Number(minimumAge) || 0);
+  return {
+    title: String(title || '').trim(),
+    short_description: String(shortDescription || '').trim() || null,
+    event_date: eventDate || null,
+    start_time: startTime || null,
+    end_time: endTime || null,
+    minimum_age: age,
+    age_label: `A partir de ${age} anos`,
+    price_cents: reaisToCents(priceReais),
+    capacity: spots,
+    status: status || 'draft',
+  };
+}
+
+export function filterRegistrations(registrations = [], filter = 'all') {
+  if (!filter || filter === 'all') return [...registrations];
+  return registrations.filter((registration) => registration.status === filter);
+}
+
 export function buildNewSession(source, { eventDate, startTime, endTime, capacity }) {
   if (!source?.experience_key || !eventDate) throw new Error('Dados da nova turma incompletos.');
   return {
@@ -166,6 +265,9 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
     },
     async listRegistrations(token) {
       return parse(await fetchImpl(`${url}/rest/v1/registrations?select=*&order=created_at.desc`, { headers: authHeaders(token) }));
+    },
+    async listAuditLog(token) {
+      return parse(await fetchImpl(`${url}/rest/v1/admin_audit_log?select=*&order=created_at.desc&limit=50`, { headers: authHeaders(token) }));
     },
     async updateRegistrationStatus(id, status, token) {
       return parse(await fetchImpl(`${url}/rest/v1/registrations?id=eq.${encodeURIComponent(id)}`, {
