@@ -943,3 +943,561 @@ details p {
   .cta__box { padding: 28px; border-radius: 30px; }
   .footer-inner { flex-direction: column; align-items: flex-start; }
 }
+
+
+/* === Socializando v4.6.0 — módulo de oficinas (isolado) === */
+.workshops-section { position: relative; overflow: hidden; }
+.workshops-section::before {
+  content: "";
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  right: -210px;
+  top: 80px;
+  border-radius: 50%;
+  border: 46px solid rgba(140,82,255,.08);
+  pointer-events: none;
+}
+.workshops-status {
+  margin: 34px auto 0;
+  max-width: 720px;
+  padding: 18px 22px;
+  border-radius: 20px;
+  text-align: center;
+  color: var(--muted);
+  background: rgba(255,255,255,.78);
+  border: 1px solid var(--line);
+}
+.workshops-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 24px;
+  margin-top: 38px;
+}
+.workshop-card {
+  overflow: hidden;
+  border-radius: 34px;
+  background: var(--white);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+}
+.workshop-card__art {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--purple-200);
+}
+.workshop-card__body { padding: 26px; }
+.workshop-card__body h3 {
+  margin-top: 14px;
+  font-size: clamp(1.7rem,3vw,2.35rem);
+  color: var(--ink);
+}
+.workshop-card__body > p {
+  margin-top: 12px;
+  color: var(--muted);
+}
+.workshop-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.workshop-card__meta span {
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 900;
+  color: var(--purple-900);
+  background: var(--purple-200);
+}
+.workshop-card__sessions {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+}
+.workshop-session {
+  width: 100%;
+  padding: 14px 15px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 14px;
+  text-align: left;
+  border: 1px solid rgba(49,19,111,.12);
+  border-radius: 18px;
+  background: #fbf9ff;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .2s ease, transform .2s ease, background .2s ease;
+}
+.workshop-session:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(140,82,255,.45); }
+.workshop-session.is-selected { background: var(--purple-200); border-color: var(--purple-700); }
+.workshop-session:disabled { opacity: .58; cursor: not-allowed; }
+.workshop-session strong { grid-column: 1; font-size: .96rem; }
+.workshop-session span { grid-column: 1; color: var(--muted); font-size: .88rem; }
+.workshop-session em {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-style: normal;
+  font-size: .78rem;
+  font-weight: 900;
+  color: var(--purple-900);
+}
+.workshop-register { width: 100%; border: 0; cursor: pointer; }
+.workshop-register:disabled { opacity: .55; cursor: not-allowed; }
+
+.workshop-dialog {
+  width: min(760px, calc(100% - 28px));
+  max-height: min(90vh, 860px);
+  padding: 0;
+  border: 0;
+  border-radius: 30px;
+  color: var(--ink);
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+.workshop-dialog::backdrop { background: rgba(24,10,55,.72); backdrop-filter: blur(5px); }
+.workshop-dialog__shell { position: relative; padding: 32px; }
+.workshop-dialog__close {
+  position: absolute;
+  right: 18px;
+  top: 16px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  color: var(--ink);
+  background: var(--soft);
+  cursor: pointer;
+}
+.workshop-dialog h3 {
+  margin-top: 10px;
+  font-size: clamp(1.8rem,4vw,2.7rem);
+  color: var(--ink);
+}
+.workshop-dialog__session { margin-top: 12px; color: var(--muted); }
+.workshop-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 24px 0 18px;
+}
+.workshop-form-grid__wide { grid-column: 1 / -1; }
+.workshop-dialog label {
+  display: grid;
+  gap: 7px;
+  font-size: .86rem;
+  font-weight: 900;
+  color: var(--purple-900);
+}
+.workshop-dialog label span { color: var(--muted); font-weight: 700; }
+.workshop-dialog input,
+.workshop-dialog textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid rgba(49,19,111,.16);
+  border-radius: 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+}
+.workshop-dialog input:focus,
+.workshop-dialog textarea:focus { border-color: var(--purple-700); box-shadow: 0 0 0 3px rgba(140,82,255,.12); }
+.workshop-consent {
+  grid-template-columns: auto 1fr !important;
+  align-items: start;
+  gap: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1.5;
+  color: var(--muted) !important;
+}
+.workshop-consent input { width: auto; margin-top: 4px; }
+.workshop-payment-warning {
+  margin: 16px 0;
+  padding: 13px 15px;
+  border-radius: 14px;
+  color: #66551e;
+  background: rgba(255,196,0,.13);
+  border: 1px solid rgba(255,196,0,.26);
+  font-size: .9rem;
+}
+.workshop-form-error {
+  margin-top: 14px;
+  color: #9a174c;
+  font-weight: 800;
+}
+.workshop-qr {
+  width: 242px;
+  min-height: 242px;
+  margin: 18px auto;
+  padding: 16px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: #fff;
+  text-align: center;
+  color: var(--muted);
+}
+.workshop-qr img, .workshop-qr canvas { max-width: 210px; }
+.workshop-pix-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.workshop-dialog .button--ghost {
+  color: var(--purple-900);
+  background: var(--purple-200);
+  border-color: rgba(140,82,255,.18);
+}
+.workshop-dialog [data-workshop-form-step="reported"] { text-align: center; padding: 24px 0 10px; }
+.workshop-dialog [data-workshop-form-step="reported"] p:not(.eyebrow) { margin: 16px auto 22px; max-width: 540px; color: var(--muted); }
+
+@media (max-width: 840px) {
+  .workshops-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .workshop-card__body { padding: 20px; }
+  .workshop-form-grid { grid-template-columns: 1fr; }
+  .workshop-form-grid__wide { grid-column: auto; }
+  .workshop-dialog__shell { padding: 26px 18px 22px; }
+  .workshop-session { grid-template-columns: 1fr; }
+  .workshop-session em { grid-column: 1; grid-row: auto; }
+  .workshop-pix-actions { display: grid; grid-template-columns: 1fr; }
+  .workshop-pix-actions .button { width: 100%; }
+}
+
+
+/* === Socializando v4.6.0 — oficinas integradas à LP === */
+.workshops-grid {
+  grid-template-columns: 1fr;
+  gap: clamp(28px, 4vw, 46px);
+  margin-top: 42px;
+}
+
+.workshop-experience {
+  --experience-accent: var(--purple-700);
+  --experience-accent-2: var(--pink);
+  --experience-deep: var(--purple-900);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+  align-items: stretch;
+  overflow: visible;
+  border-radius: 42px;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid rgba(41,20,91,.09);
+  box-shadow: 0 28px 70px rgba(41,20,91,.16);
+  isolation: isolate;
+}
+
+.workshop-experience--jurassica {
+  --experience-accent: #5ea33d;
+  --experience-accent-2: #ef8d2f;
+  --experience-deep: #315f2d;
+}
+
+.workshop-experience--squish {
+  --experience-accent: #d7359b;
+  --experience-accent-2: #8c52ff;
+  --experience-deep: #5d237b;
+}
+
+.workshop-experience__visual {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 2.5vw, 32px);
+  background:
+    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--experience-accent-2) 26%, transparent), transparent 34%),
+    radial-gradient(circle at 86% 84%, color-mix(in srgb, var(--experience-accent) 30%, transparent), transparent 36%),
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--experience-deep) 94%, #ffffff 6%) 0%,
+      color-mix(in srgb, var(--experience-accent) 72%, var(--experience-deep) 28%) 100%);
+  border-radius: 42px 0 0 42px;
+}
+
+.workshop-experience__visual::before,
+.workshop-experience__visual::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.workshop-experience__visual::before {
+  width: 180px;
+  height: 180px;
+  left: -64px;
+  bottom: -58px;
+  border-radius: 50%;
+  border: 28px solid color-mix(in srgb, var(--experience-accent-2) 55%, transparent);
+  border-right-color: transparent;
+  border-top-color: transparent;
+  transform: rotate(-14deg);
+}
+
+.workshop-experience__visual::after {
+  width: 130px;
+  height: 130px;
+  right: -48px;
+  top: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--experience-accent-2) 26%, transparent), transparent 68%);
+}
+
+.workshop-experience__visual-frame {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 520px);
+  display: grid;
+  place-items: center;
+}
+
+.workshop-experience__art {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 22px 28px rgba(20,8,54,.24));
+}
+
+.workshop-experience__visual-fallback {
+  width: 100%;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 36px 28px;
+  text-align: center;
+  color: #fff;
+}
+
+.workshop-experience__visual-fallback img {
+  width: min(230px, 68%);
+  filter: brightness(0) invert(1) drop-shadow(0 10px 20px rgba(0,0,0,.15));
+}
+
+.workshop-experience__visual-fallback strong {
+  max-width: 320px;
+  font-size: clamp(1.6rem, 3vw, 2.45rem);
+  line-height: 1;
+}
+
+.workshop-experience__visual-fallback span {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.2);
+}
+
+.workshop-experience__availability {
+  position: absolute;
+  z-index: 5;
+  top: 34px;
+  right: -52px;
+  width: 122px;
+  min-height: 122px;
+  padding: 16px 13px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+  border-radius: 32px;
+  color: var(--experience-deep);
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(255,255,255,.78);
+  box-shadow: 0 18px 42px rgba(35,14,76,.2);
+  backdrop-filter: blur(12px);
+}
+
+.workshop-experience__availability span {
+  font-size: .69rem;
+  font-weight: 1000;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .66;
+}
+
+.workshop-experience__availability strong {
+  display: block;
+  margin-top: 4px;
+  font-size: .95rem;
+  line-height: 1.08;
+}
+
+.workshop-experience__content {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  padding: clamp(34px, 4vw, 56px) clamp(28px, 4vw, 58px) clamp(34px, 4vw, 52px) clamp(54px, 5vw, 78px);
+  border-radius: 0 42px 42px 0;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--experience-accent) 7%, #ffffff 93%) 0%,
+      #ffffff 22%,
+      #ffffff 100%);
+}
+
+.workshop-experience__content::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 -46px;
+  width: 94px;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--experience-accent) 20%, transparent) 0%,
+    rgba(255,255,255,.94) 76%,
+    #ffffff 100%);
+  filter: blur(2px);
+}
+
+.workshop-experience__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.workshop-experience__meta span {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--experience-deep);
+  background: color-mix(in srgb, var(--experience-accent) 11%, #ffffff 89%);
+  border: 1px solid color-mix(in srgb, var(--experience-accent) 20%, transparent);
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.workshop-experience__content h3 {
+  margin-top: 18px;
+  max-width: 640px;
+  font-size: clamp(2.2rem, 4.4vw, 4rem);
+  line-height: .94;
+  color: var(--ink);
+}
+
+.workshop-experience__description {
+  margin-top: 16px;
+  max-width: 620px;
+  color: var(--muted);
+  font-size: clamp(.98rem, 1.35vw, 1.08rem);
+}
+
+.workshop-experience__sessions-label {
+  margin-top: 28px;
+  font-size: .76rem;
+  font-weight: 1000;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--experience-deep);
+}
+
+.workshop-experience__sessions {
+  margin: 10px 0 16px;
+}
+
+.workshop-experience .workshop-session {
+  background: color-mix(in srgb, var(--experience-accent) 5%, #ffffff 95%);
+  border-color: color-mix(in srgb, var(--experience-accent) 19%, transparent);
+}
+
+.workshop-experience .workshop-session:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--experience-accent) 58%, transparent);
+}
+
+.workshop-experience .workshop-session.is-selected {
+  background: color-mix(in srgb, var(--experience-accent) 12%, #ffffff 88%);
+  border-color: var(--experience-accent);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--experience-accent) 14%, transparent);
+}
+
+.workshop-experience .workshop-session em {
+  color: var(--experience-deep);
+}
+
+.workshop-experience__notice {
+  margin: 0 0 18px;
+  padding-left: 13px;
+  border-left: 3px solid var(--experience-accent);
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.55;
+}
+
+.workshop-experience .workshop-register {
+  width: auto;
+  min-width: 210px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--experience-accent) 88%, #ffffff 12%),
+    color-mix(in srgb, var(--experience-accent-2) 78%, #ffffff 22%));
+  color: #ffffff;
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--experience-accent) 24%, transparent);
+}
+
+@media (max-width: 840px) {
+  .workshop-experience {
+    grid-template-columns: 1fr;
+    border-radius: 34px;
+    overflow: visible;
+  }
+
+  .workshop-experience__visual {
+    border-radius: 34px 34px 0 0;
+    padding: 18px 18px 42px;
+  }
+
+  .workshop-experience__content {
+    padding: 50px 22px 28px;
+    border-radius: 0 0 34px 34px;
+  }
+
+  .workshop-experience__content::before {
+    inset: -42px 0 auto 0;
+    width: auto;
+    height: 84px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--experience-accent) 12%, transparent) 0%,
+      rgba(255,255,255,.96) 68%,
+      #ffffff 100%);
+  }
+
+  .workshop-experience__availability {
+    top: auto;
+    right: auto;
+    left: 22px;
+    bottom: -34px;
+    width: auto;
+    min-height: 0;
+    min-width: 156px;
+    padding: 12px 16px;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    border-radius: 20px;
+    text-align: left;
+  }
+
+  .workshop-experience__availability strong {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .workshop-experience__visual {
+    padding-inline: 10px;
+  }
+
+  .workshop-experience__content h3 {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  .workshop-experience .workshop-register {
+    width: 100%;
+  }
+}

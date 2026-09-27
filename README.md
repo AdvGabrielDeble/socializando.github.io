@@ -156,3 +156,20 @@ Esta v4 evita o erro de transformar o logo em “cartão colado”. A aplicaçã
 - número oficial de WhatsApp atualizado para +55 53 99951-9569;
 - número técnico configurado como `5553999519569`;
 - mantidos layout, SEO, páginas internas, animações e demais conteúdos sem alterações.
+
+
+## Ajuste v4.6.0 — Gestão de Oficinas
+
+- adicionada a seção `Oficinas` à LP, entre Temporada e Galeria, preservando o design-base;
+- item `Oficinas` incluído no menu superior;
+- oficinas estruturadas como experiências integradas à LP, com arte canônica, turmas, preço, idade, vagas e inscrição no mesmo painel;
+- artes atualizadas de 10/10/2026 incorporadas integralmente, sem recorte, recompressão ou alteração visual;
+- nomenclatura oficial atualizada para `Fábrica dos Squishy Mágicos` e `Paper Squishy`;
+- Expedição Jurássica: 10/10/2026, 14h–15h30, 15 vagas, R$ 50,00, a partir de 5 anos;
+- Fábrica dos Squishy Mágicos: 10/10/2026, 15h30–17h, 15 vagas, R$ 50,00, a partir de 5 anos;
+- suporte a múltiplas turmas da mesma experiência em datas distintas, com contador independente;
+- Pix direto sem gateway; somente pagamento confirmado pela equipe ocupa vaga;
+- Supabase Free como backend, sem contratação de serviço pago;
+- painel administrativo protegido por autenticação passwordless;
+- testes automatizados e validações de integridade dos assets incluídos;
+- desenvolvimento mantido na branch `feature/oficinas-v4.6.0` até aprovação final de publicação.

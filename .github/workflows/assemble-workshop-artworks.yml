@@ -1,0 +1,72 @@
+name: Assemble canonical workshop artworks
+
+on:
+  push:
+    branches:
+      - feature/oficinas-v4.6.0
+    paths:
+      - '.artifact-chunks/**'
+      - '.github/workflows/assemble-workshop-artworks.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+
+      - name: Assemble exact PNG bytes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, sys
+
+          targets = {
+              ".artifact-chunks/expedition": (
+                  "assets/oficinas/expedicao-jurassica-2026-10-10.png",
+                  "e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454",
+              ),
+              ".artifact-chunks/squishy": (
+                  "assets/oficinas/fabrica-squishy-magicos-2026-10-10.png",
+                  "2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339",
+              ),
+          }
+
+          if not all(Path(folder).exists() for folder in targets):
+              print("Artifact chunks are not complete yet; nothing to assemble.")
+              sys.exit(0)
+
+          for folder, (target, expected_sha) in targets.items():
+              parts = sorted(Path(folder).glob("*.part"))
+              if not parts:
+                  raise SystemExit(f"No chunks found in {folder}")
+              encoded = "".join(p.read_text().strip() for p in parts)
+              raw = base64.b64decode(encoded, validate=True)
+              actual = hashlib.sha256(raw).hexdigest()
+              if actual != expected_sha:
+                  raise SystemExit(f"SHA-256 mismatch for {target}: {actual}")
+              out = Path(target)
+              out.parent.mkdir(parents=True, exist_ok=True)
+              out.write_bytes(raw)
+              print(f"{target}: {len(raw)} bytes, SHA-256 {actual}")
+          PY
+
+      - name: Commit canonical artworks
+        run: |
+          if [ ! -f assets/oficinas/expedicao-jurassica-2026-10-10.png ] || [ ! -f assets/oficinas/fabrica-squishy-magicos-2026-10-10.png ]; then
+            echo "Both artworks are not assembled yet."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -r .artifact-chunks
+          git add assets/oficinas/expedicao-jurassica-2026-10-10.png assets/oficinas/fabrica-squishy-magicos-2026-10-10.png
+          if git diff --cached --quiet; then
+            echo "No artwork changes to commit."
+            exit 0
+          fi
+          git commit -m "v4.6.0: assemble canonical workshop artwork binaries"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

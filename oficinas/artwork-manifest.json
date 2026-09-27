@@ -1,0 +1,28 @@
+{
+  "version": "v4.6.0",
+  "policy": "As artes canônicas devem ser copiadas byte a byte. Não redimensionar, recomprimir, recortar, converter, recolorir ou editar.",
+  "artworks": [
+    {
+      "experience_key": "expedicao-jurassica",
+      "source_filename": "Imagem do ChatGPT 27 de set. de 2026, 15_36_40.png",
+      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10.png",
+      "sha256": "e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454",
+      "bytes": 3585562,
+      "width": 1024,
+      "height": 1536,
+      "status": "source-verified-binary-in-repository"
+    },
+    {
+      "experience_key": "fabrica-dos-squishy-magicos",
+      "source_filename": "Imagem do ChatGPT 27 de set. de 2026, 15_44_11.png",
+      "target_path": "assets/oficinas/fabrica-squishy-magicos-2026-10-10.png",
+      "sha256": "2ed21c9bd59f01659f5812d3d9a7a6574bdbb95cdf6b972dca558e9f61ecd339",
+      "bytes": 3529499,
+      "width": 1254,
+      "height": 1254,
+      "status": "source-verified-binary-in-repository"
+    }
+  ],
+  "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
+  "notes": "Artes atualizadas aprovadas em 27/09/2026. A nomenclatura pública correta é Squishy. Os PNGs foram transferidos para o repositório sem edição, recorte, recompressão ou conversão; a montagem binária foi validada por SHA-256 antes do commit."
+}
