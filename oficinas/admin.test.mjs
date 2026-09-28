@@ -122,11 +122,11 @@ test('admin login exchanges SOCIALIZANDO + password for a Supabase session witho
 
   const session = await api.signInWithPassword('socializando', 'senha-fornecida-em-runtime');
   assert.equal(session.access_token, 'jwt');
-  assert.match(request.url, /\/auth\/v1\/token\?grant_type=password$/);
+  assert.match(request.url, /\/functions\/v1\/admin-login$/);
   assert.equal(request.options.headers.apikey, 'sb_publishable_example');
-  assert.equal(request.options.headers.Authorization, 'Bearer sb_publishable_example');
+  assert.equal(request.options.headers.Authorization, undefined);
   const body = JSON.parse(request.options.body);
-  assert.equal(body.email, 'gabrieldeblegd@gmail.com');
+  assert.equal(body.username, 'SOCIALIZANDO');
   assert.equal(body.password, 'senha-fornecida-em-runtime');
 });
 
@@ -157,7 +157,7 @@ test('admin session refresh uses the refresh token endpoint', async () => {
   const session = await api.refreshSession('refresh-123');
   assert.equal(session.access_token, 'new-jwt');
   assert.match(request.url, /grant_type=refresh_token$/);
-  assert.equal(request.options.headers.Authorization, 'Bearer sb_publishable_example');
+  assert.equal(request.options.headers.Authorization, undefined);
   assert.deepEqual(JSON.parse(request.options.body), { refresh_token:'refresh-123' });
 });
 
@@ -321,4 +321,6 @@ test('admin source has no Magic Link flow or embedded administrative password', 
   assert.match(source, /name="password"/);
   assert.match(source, /SOCIALIZANDO/);
   assert.doesNotMatch(source, /65ca77tieli1086/);
+  assert.match(source, /\/functions\/v1\/admin-login/);
+  assert.doesNotMatch(source, /gabrieldeblegd@gmail\.com/);
 });
