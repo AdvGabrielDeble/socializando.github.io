@@ -235,11 +235,11 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
         throw new Error('Usuário ou senha inválidos.');
       }
 
-      const response = await fetchImpl(`${url}/auth/v1/token?grant_type=password`, {
+      const response = await fetchImpl(`${url}/functions/v1/admin-login`, {
         method: 'POST',
-        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: 'gabrieldeblegd@gmail.com',
+          username: normalizedUsername,
           password: secret,
         }),
       });
@@ -251,7 +251,7 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
 
       const response = await fetchImpl(`${url}/auth/v1/token?grant_type=refresh_token`, {
         method: 'POST',
-        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
+        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: sessionRefreshToken }),
       });
       return parse(response);
@@ -426,7 +426,7 @@ async function initAdmin() {
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.0</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.2</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
