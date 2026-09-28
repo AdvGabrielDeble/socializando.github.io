@@ -324,3 +324,20 @@ test('admin source has no Magic Link flow or embedded administrative password', 
   assert.match(source, /\/functions\/v1\/admin-login/);
   assert.doesNotMatch(source, /gabrieldeblegd@gmail\.com/);
 });
+
+
+test('admin login surfaces backend authentication errors instead of generic HTTP status', async () => {
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async () => ({
+      ok:false,
+      status:401,
+      async json(){ return { error:'Usuário ou senha inválidos.' }; },
+    }),
+  });
+
+  await assert.rejects(
+    () => api.signInWithPassword('SOCIALIZANDO', 'senha-incorreta'),
+    /Usuário ou senha inválidos\./
+  );
+});
