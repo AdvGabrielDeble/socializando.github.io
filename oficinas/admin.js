@@ -237,7 +237,7 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
 
       const response = await fetchImpl(`${url}/auth/v1/token?grant_type=password`, {
         method: 'POST',
-        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'gabrieldeblegd@gmail.com',
           password: secret,
@@ -251,7 +251,7 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
 
       const response = await fetchImpl(`${url}/auth/v1/token?grant_type=refresh_token`, {
         method: 'POST',
-        headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: sessionRefreshToken }),
       });
       return parse(response);
