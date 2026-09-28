@@ -183,7 +183,13 @@ Deno.serve(async (req: Request) => {
       p_pix_copy_paste: pixCopyPaste,
       p_location: location || null,
       p_expires_at: row.reservation_expires_at,
-      p_provider_payload: charge,
+      p_provider_payload: {
+        txid: charge?.txid || txid,
+        status: charge?.status || null,
+        location: charge?.location || null,
+        calendario: charge?.calendario || null,
+        valor: charge?.valor || null,
+      },
     });
     if (recordError) throw new Error(recordError.message);
 
