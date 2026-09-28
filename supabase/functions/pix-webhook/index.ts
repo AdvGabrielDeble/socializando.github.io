@@ -118,7 +118,12 @@ Deno.serve(async (req: Request) => {
         p_amount_cents: moneyToCents(verified.valor),
         p_paid_at: verified.horario || new Date().toISOString(),
         p_end_to_end_id: verified.endToEndId || null,
-        p_provider_payload: verified,
+        p_provider_payload: {
+          txid: verified.txid || txid,
+          endToEndId: verified.endToEndId || null,
+          valor: verified.valor,
+          horario: verified.horario || null,
+        },
       });
       if (confirmError) throw new Error(confirmError.message);
 
