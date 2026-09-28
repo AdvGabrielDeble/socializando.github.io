@@ -764,12 +764,12 @@ begin
     raise exception 'Idade abaixo da faixa mínima da oficina';
   end if;
 
-  update public.registrations
+  update public.registrations as rr
   set status = 'expired', updated_at = now()
-  where workshop_id = p_workshop_id
-    and status = 'pending_payment'
-    and reservation_expires_at is not null
-    and reservation_expires_at <= now();
+  where rr.workshop_id = p_workshop_id
+    and rr.status = 'pending_payment'
+    and rr.reservation_expires_at is not null
+    and rr.reservation_expires_at <= now();
 
   select count(*)::integer into v_occupied
   from public.registrations r
