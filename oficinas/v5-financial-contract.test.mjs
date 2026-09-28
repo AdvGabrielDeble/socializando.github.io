@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 const schema = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8');
 const checkout = readFileSync(new URL('../supabase/functions/pix-checkout/index.ts', import.meta.url), 'utf8');
 const webhook = readFileSync(new URL('../supabase/functions/pix-webhook/index.ts', import.meta.url), 'utf8');
+const statusFn = readFileSync(new URL('../supabase/functions/pix-status/index.ts', import.meta.url), 'utf8');
 
 test('V5 keeps current workshops on manual Pix unless explicitly enabled', () => {
   assert.match(schema, /payment_mode text not null default 'manual_pix'/);
@@ -26,8 +27,11 @@ test('V5 reserves atomically and only service role can invoke financial mutation
   assert.match(schema, /grant execute on function public\.confirm_pix_payment[\s\S]*to service_role/);
 });
 
-test('V5 does not expose a new privileged public status RPC', () => {
+test('V5 exposes status only through Edge Function + public token', () => {
   assert.doesNotMatch(schema, /create or replace function public\.get_public_registration_status/);
+  assert.match(statusFn, /\.eq\("id", registrationId\)/);
+  assert.match(statusFn, /\.eq\("public_token", publicToken\)/);
+  assert.match(statusFn, /payment_status/);
 });
 
 test('Sicredi checkout uses mTLS, OAuth client credentials and txid-defined Cob', () => {
