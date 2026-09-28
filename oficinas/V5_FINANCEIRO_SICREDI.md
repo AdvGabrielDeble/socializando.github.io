@@ -19,8 +19,9 @@ Cadastro → reserva temporária → cobrança Pix Sicredi com txid único → Q
 - Edge Function `pix-checkout`: cria reserva, autentica no Sicredi via OAuth2 + mTLS, gera cobrança imediata e registra txid.
 - Edge Function `pix-webhook`: recebe evento, consulta o Sicredi novamente pelo txid e somente então confirma a inscrição.
 - Tabela `payment_transactions`: ledger de cobranças e liquidações.
-- RPC pública somente de leitura de status: `get_public_registration_status`.
+- Edge Function `pix-status`: consulta pública mínima por `registration_id + public_token`, sem RPC privilegiado exposto.
 - RPCs financeiras de mutação: exclusivas de `service_role`.
+- Edge Functions ativas no Supabase: `pix-checkout`, `pix-webhook`, `pix-status`.
 
 ## Segredos esperados no Supabase
 
