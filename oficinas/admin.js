@@ -218,7 +218,7 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
   const parse = async (response) => {
     let body = null;
     try { body = await response.json(); } catch { body = null; }
-    if (!response.ok) throw new Error(body?.message || body?.error_description || body?.hint || `Erro HTTP ${response.status}`);
+    if (!response.ok) throw new Error(body?.message || body?.error || body?.error_description || body?.hint || `Erro HTTP ${response.status}`);
     return body;
   };
   const authHeaders = (token) => {
