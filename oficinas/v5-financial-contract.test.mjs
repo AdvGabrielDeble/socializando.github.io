@@ -26,10 +26,8 @@ test('V5 reserves atomically and only service role can invoke financial mutation
   assert.match(schema, /grant execute on function public\.confirm_pix_payment[\s\S]*to service_role/);
 });
 
-test('V5 public status query exposes only status metadata by token', () => {
-  assert.match(schema, /create or replace function public\.get_public_registration_status/);
-  assert.match(schema, /r\.id=p_registration_id and r\.public_token=p_public_token/);
-  assert.match(schema, /grant execute on function public\.get_public_registration_status\(uuid,uuid\) to anon, authenticated/);
+test('V5 does not expose a new privileged public status RPC', () => {
+  assert.doesNotMatch(schema, /create or replace function public\.get_public_registration_status/);
 });
 
 test('Sicredi checkout uses mTLS, OAuth client credentials and txid-defined Cob', () => {
