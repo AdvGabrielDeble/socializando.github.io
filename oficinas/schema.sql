@@ -623,3 +623,390 @@ grant execute on function public.list_public_workshops() to anon;
 grant execute on function public.create_public_registration(uuid,text,text,text,text,integer,date,text) to anon;
 grant execute on function public.report_public_payment(uuid,uuid) to anon;
 grant execute on function public.is_workshop_admin() to authenticated;
+
+
+-- =========================================================
+-- Socializando — Fundação financeira V5.0 (Sicredi Pix)
+-- Compatibilidade: permanece INATIVA por padrão.
+-- Oficinas existentes seguem em payment_mode = 'manual_pix'.
+-- =========================================================
+
+alter table public.workshops
+  add column if not exists payment_mode text not null default 'manual_pix',
+  add column if not exists reservation_minutes integer not null default 15;
+
+alter table public.workshops drop constraint if exists workshops_payment_mode_check;
+alter table public.workshops add constraint workshops_payment_mode_check
+  check (payment_mode in ('manual_pix','sicredi_api'));
+
+alter table public.workshops drop constraint if exists workshops_reservation_minutes_check;
+alter table public.workshops add constraint workshops_reservation_minutes_check
+  check (reservation_minutes between 5 and 60);
+
+alter table public.registrations
+  add column if not exists reservation_expires_at timestamptz,
+  add column if not exists payment_confirmed_at timestamptz;
+
+alter table public.registrations drop constraint if exists registrations_status_check;
+alter table public.registrations add constraint registrations_status_check
+  check (status in ('pending_payment','payment_reported','confirmed','cancelled','expired'));
+
+create table if not exists public.payment_transactions (
+  id uuid primary key default gen_random_uuid(),
+  registration_id uuid not null references public.registrations(id) on delete restrict,
+  provider text not null default 'sicredi',
+  provider_txid text not null,
+  amount_cents integer not null check (amount_cents >= 0),
+  status text not null default 'created'
+    check (status in ('created','paid','expired','cancelled','failed','refunded','review')),
+  pix_copy_paste text,
+  provider_location text,
+  end_to_end_id text,
+  expires_at timestamptz,
+  paid_at timestamptz,
+  last_checked_at timestamptz,
+  provider_payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider, provider_txid)
+);
+
+create index if not exists payment_transactions_registration_idx
+  on public.payment_transactions (registration_id, created_at desc);
+create index if not exists payment_transactions_status_expiry_idx
+  on public.payment_transactions (status, expires_at);
+create unique index if not exists payment_transactions_e2eid_idx
+  on public.payment_transactions (end_to_end_id)
+  where end_to_end_id is not null;
+create index if not exists registrations_reservation_expiry_idx
+  on public.registrations (workshop_id, reservation_expires_at)
+  where status = 'pending_payment';
+
+alter table public.payment_transactions enable row level security;
+revoke all on public.payment_transactions from public, anon;
+
+drop policy if exists "admins can read payment transactions" on public.payment_transactions;
+create policy "admins can read payment transactions"
+on public.payment_transactions
+for select
+to authenticated
+using (public.is_workshop_admin());
+
+grant select on public.payment_transactions to authenticated;
+
+create or replace function public.touch_payment_transaction_updated_at()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists payment_transactions_touch_updated_at on public.payment_transactions;
+create trigger payment_transactions_touch_updated_at
+before update on public.payment_transactions
+for each row execute function public.touch_payment_transaction_updated_at();
+
+create or replace function public.reserve_pix_registration(
+  p_workshop_id uuid,
+  p_responsible_name text,
+  p_responsible_whatsapp text,
+  p_responsible_email text,
+  p_child_name text,
+  p_child_age integer,
+  p_child_birth_date date default null,
+  p_notes text default null
+)
+returns table (
+  registration_id uuid,
+  public_token uuid,
+  amount_cents integer,
+  payment_reference text,
+  reservation_expires_at timestamptz,
+  status text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_workshop public.workshops%rowtype;
+  v_id uuid := gen_random_uuid();
+  v_token uuid := gen_random_uuid();
+  v_reference text;
+  v_occupied integer;
+  v_expires timestamptz;
+begin
+  select w.* into v_workshop
+  from public.workshops w
+  where w.id = p_workshop_id
+    and w.status = 'open'
+    and w.payment_mode = 'sicredi_api'
+  for update;
+
+  if not found then
+    raise exception 'Oficina indisponível para checkout Pix automático';
+  end if;
+
+  if p_responsible_name is null or length(trim(p_responsible_name)) < 3 then
+    raise exception 'Nome do responsável inválido';
+  end if;
+  if p_responsible_whatsapp is null or length(regexp_replace(p_responsible_whatsapp, '\\D', '', 'g')) < 10 then
+    raise exception 'WhatsApp inválido';
+  end if;
+  if p_child_name is null or length(trim(p_child_name)) < 2 then
+    raise exception 'Nome da criança inválido';
+  end if;
+  if p_child_age is null or p_child_age < v_workshop.minimum_age then
+    raise exception 'Idade abaixo da faixa mínima da oficina';
+  end if;
+
+  update public.registrations as rr
+  set status = 'expired', updated_at = now()
+  where rr.workshop_id = p_workshop_id
+    and rr.status = 'pending_payment'
+    and rr.reservation_expires_at is not null
+    and rr.reservation_expires_at <= now();
+
+  select count(*)::integer into v_occupied
+  from public.registrations r
+  where r.workshop_id = p_workshop_id
+    and (
+      r.status in ('payment_reported','confirmed')
+      or (
+        r.status = 'pending_payment'
+        and r.reservation_expires_at is not null
+        and r.reservation_expires_at > now()
+      )
+    );
+
+  if v_occupied >= v_workshop.capacity then
+    raise exception 'Oficina sem vagas disponíveis';
+  end if;
+
+  v_reference := 'SJ' || upper(substr(replace(v_id::text, '-', ''), 1, 20));
+  v_expires := now() + make_interval(mins => v_workshop.reservation_minutes);
+
+  insert into public.registrations (
+    id, public_token, workshop_id,
+    responsible_name, responsible_whatsapp, responsible_email,
+    child_name, child_age, child_birth_date, notes,
+    amount_cents, payment_reference, status, reservation_expires_at
+  ) values (
+    v_id, v_token, p_workshop_id,
+    trim(p_responsible_name), trim(p_responsible_whatsapp), nullif(trim(p_responsible_email), ''),
+    trim(p_child_name), p_child_age, p_child_birth_date, nullif(trim(p_notes), ''),
+    v_workshop.price_cents, v_reference, 'pending_payment', v_expires
+  );
+
+  return query
+  select v_id, v_token, v_workshop.price_cents, v_reference, v_expires, 'pending_payment'::text;
+end;
+$$;
+
+revoke all on function public.reserve_pix_registration(uuid,text,text,text,text,integer,date,text) from public, anon, authenticated;
+grant execute on function public.reserve_pix_registration(uuid,text,text,text,text,integer,date,text) to service_role;
+
+create or replace function public.record_pix_charge(
+  p_registration_id uuid,
+  p_txid text,
+  p_amount_cents integer,
+  p_pix_copy_paste text,
+  p_location text,
+  p_expires_at timestamptz,
+  p_provider_payload jsonb default '{}'::jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_registration public.registrations%rowtype;
+  v_id uuid;
+begin
+  if p_txid !~ '^[A-Za-z0-9]{26,35}$' then raise exception 'txid inválido'; end if;
+
+  select * into v_registration
+  from public.registrations
+  where id = p_registration_id
+  for update;
+
+  if not found or v_registration.status <> 'pending_payment' then
+    raise exception 'Inscrição não está aguardando pagamento';
+  end if;
+  if p_amount_cents <> v_registration.amount_cents then
+    raise exception 'Valor da cobrança divergente';
+  end if;
+
+  insert into public.payment_transactions (
+    registration_id, provider, provider_txid, amount_cents, status,
+    pix_copy_paste, provider_location, expires_at, provider_payload
+  ) values (
+    p_registration_id, 'sicredi', p_txid, p_amount_cents, 'created',
+    nullif(p_pix_copy_paste,''), nullif(p_location,''), p_expires_at,
+    coalesce(p_provider_payload,'{}'::jsonb)
+  )
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+revoke all on function public.record_pix_charge(uuid,text,integer,text,text,timestamptz,jsonb) from public, anon, authenticated;
+grant execute on function public.record_pix_charge(uuid,text,integer,text,text,timestamptz,jsonb) to service_role;
+
+create or replace function public.confirm_pix_payment(
+  p_txid text,
+  p_amount_cents integer,
+  p_paid_at timestamptz,
+  p_end_to_end_id text default null,
+  p_provider_payload jsonb default '{}'::jsonb
+)
+returns table (
+  registration_id uuid,
+  registration_status text,
+  payment_status text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_payment public.payment_transactions%rowtype;
+  v_registration public.registrations%rowtype;
+  v_capacity integer;
+  v_confirmed integer;
+begin
+  select * into v_payment
+  from public.payment_transactions
+  where provider = 'sicredi' and provider_txid = p_txid
+  for update;
+
+  if not found then raise exception 'Cobrança não encontrada'; end if;
+
+  select * into v_registration
+  from public.registrations
+  where id = v_payment.registration_id
+  for update;
+
+  if v_payment.status = 'paid' and v_registration.status = 'confirmed' then
+    return query select v_registration.id, v_registration.status, v_payment.status;
+    return;
+  end if;
+
+  if p_amount_cents <> v_payment.amount_cents or p_amount_cents <> v_registration.amount_cents then
+    update public.payment_transactions
+    set status='review', paid_at=coalesce(p_paid_at,now()),
+        end_to_end_id=coalesce(p_end_to_end_id,end_to_end_id),
+        provider_payload=coalesce(p_provider_payload,'{}'::jsonb), last_checked_at=now()
+    where id=v_payment.id;
+    return query select v_registration.id, v_registration.status, 'review'::text;
+    return;
+  end if;
+
+  if v_registration.reservation_expires_at is not null
+     and coalesce(p_paid_at,now()) > v_registration.reservation_expires_at then
+    update public.payment_transactions
+    set status='review', paid_at=coalesce(p_paid_at,now()),
+        end_to_end_id=coalesce(p_end_to_end_id,end_to_end_id),
+        provider_payload=coalesce(p_provider_payload,'{}'::jsonb), last_checked_at=now()
+    where id=v_payment.id;
+    return query select v_registration.id, v_registration.status, 'review'::text;
+    return;
+  end if;
+
+  select capacity into v_capacity
+  from public.workshops
+  where id=v_registration.workshop_id
+  for update;
+
+  select count(*)::integer into v_confirmed
+  from public.registrations
+  where workshop_id=v_registration.workshop_id
+    and status in ('payment_reported','confirmed')
+    and id <> v_registration.id;
+
+  if v_confirmed >= v_capacity then
+    update public.payment_transactions
+    set status='review', paid_at=coalesce(p_paid_at,now()),
+        end_to_end_id=coalesce(p_end_to_end_id,end_to_end_id),
+        provider_payload=coalesce(p_provider_payload,'{}'::jsonb), last_checked_at=now()
+    where id=v_payment.id;
+    return query select v_registration.id, v_registration.status, 'review'::text;
+    return;
+  end if;
+
+  update public.payment_transactions
+  set status='paid', paid_at=coalesce(p_paid_at,now()),
+      end_to_end_id=coalesce(p_end_to_end_id,end_to_end_id),
+      provider_payload=coalesce(p_provider_payload,'{}'::jsonb), last_checked_at=now()
+  where id=v_payment.id;
+
+  update public.registrations
+  set status='confirmed',
+      payment_confirmed_at=coalesce(payment_confirmed_at,coalesce(p_paid_at,now())),
+      confirmed_at=coalesce(confirmed_at,coalesce(p_paid_at,now())),
+      updated_at=now()
+  where id=v_registration.id;
+
+  return query
+  select r.id, r.status, 'paid'::text
+  from public.registrations r
+  where r.id=v_registration.id;
+end;
+$$;
+
+revoke all on function public.confirm_pix_payment(text,integer,timestamptz,text,jsonb) from public, anon, authenticated;
+grant execute on function public.confirm_pix_payment(text,integer,timestamptz,text,jsonb) to service_role;
+
+-- list_public_workshops passa a contar reservas válidas apenas quando a oficina
+-- estiver explicitamente no modo sicredi_api. O modo manual preserva a V4.8.2.
+create or replace function public.list_public_workshops()
+returns table (
+  id uuid, experience_key text, slug text, title text, short_description text,
+  event_date date, start_time time, end_time time, minimum_age integer,
+  age_label text, price_cents integer, capacity integer, status text,
+  image_url text, confirmed_count integer, available_spots integer
+)
+language sql
+stable
+security definer
+set search_path = public
+as $sql$
+  select
+    w.id, w.experience_key, w.slug, w.title, w.short_description,
+    w.event_date, w.start_time, w.end_time, w.minimum_age, w.age_label,
+    w.price_cents, w.capacity, w.status, w.image_url,
+    count(r.id) filter (where r.status = 'confirmed')::integer as confirmed_count,
+    greatest(
+      w.capacity - count(r.id) filter (
+        where
+          (
+            w.payment_mode = 'sicredi_api'
+            and (
+              r.status in ('payment_reported','confirmed')
+              or (
+                r.status = 'pending_payment'
+                and r.reservation_expires_at is not null
+                and r.reservation_expires_at > now()
+              )
+            )
+          )
+          or
+          (
+            w.payment_mode <> 'sicredi_api'
+            and r.status in ('payment_reported','confirmed')
+          )
+      )::integer,
+      0
+    ) as available_spots
+  from public.workshops w
+  left join public.registrations r on r.workshop_id = w.id
+  where w.status in ('open','sold_out')
+  group by w.id
+  order by w.event_date, w.start_time;
+$sql$;
