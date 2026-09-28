@@ -124,7 +124,7 @@ test('admin login exchanges SOCIALIZANDO + password for a Supabase session witho
   assert.equal(session.access_token, 'jwt');
   assert.match(request.url, /\/auth\/v1\/token\?grant_type=password$/);
   assert.equal(request.options.headers.apikey, 'sb_publishable_example');
-  assert.equal(request.options.headers.Authorization, undefined);
+  assert.equal(request.options.headers.Authorization, 'Bearer sb_publishable_example');
   const body = JSON.parse(request.options.body);
   assert.equal(body.email, 'gabrieldeblegd@gmail.com');
   assert.equal(body.password, 'senha-fornecida-em-runtime');
@@ -157,6 +157,7 @@ test('admin session refresh uses the refresh token endpoint', async () => {
   const session = await api.refreshSession('refresh-123');
   assert.equal(session.access_token, 'new-jwt');
   assert.match(request.url, /grant_type=refresh_token$/);
+  assert.equal(request.options.headers.Authorization, 'Bearer sb_publishable_example');
   assert.deepEqual(JSON.parse(request.options.body), { refresh_token:'refresh-123' });
 });
 
