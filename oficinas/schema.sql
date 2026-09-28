@@ -963,36 +963,6 @@ $$;
 revoke all on function public.confirm_pix_payment(text,integer,timestamptz,text,jsonb) from public, anon, authenticated;
 grant execute on function public.confirm_pix_payment(text,integer,timestamptz,text,jsonb) to service_role;
 
-create or replace function public.get_public_registration_status(
-  p_registration_id uuid,
-  p_public_token uuid
-)
-returns table (
-  status text,
-  reservation_expires_at timestamptz,
-  confirmed_at timestamptz,
-  payment_status text
-)
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select r.status, r.reservation_expires_at, r.confirmed_at,
-    (
-      select p.status
-      from public.payment_transactions p
-      where p.registration_id=r.id
-      order by p.created_at desc
-      limit 1
-    ) as payment_status
-  from public.registrations r
-  where r.id=p_registration_id and r.public_token=p_public_token;
-$$;
-
-revoke all on function public.get_public_registration_status(uuid,uuid) from public;
-grant execute on function public.get_public_registration_status(uuid,uuid) to anon, authenticated;
-
 -- list_public_workshops passa a contar reservas válidas apenas quando a oficina
 -- estiver explicitamente no modo sicredi_api. O modo manual preserva a V4.8.2.
 create or replace function public.list_public_workshops()
