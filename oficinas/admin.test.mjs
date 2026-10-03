@@ -49,10 +49,10 @@ test('canonical 10 October artwork rules are immutable and date-specific', () =>
     event_date: '2026-10-10',
   });
   assert.deepEqual(jurassica, {
-    storagePath: 'expedicao-jurassica-2026-10-10.png',
-    sha256: 'e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454',
-    sizeBytes: 3585562,
-    mimeType: 'image/png',
+    storagePath: 'expedicao-jurassica-2026-10-10-v2.webp',
+    sha256: 'c0dacfae9358056a43bd2d3ee339c7734b8cafa755f3622c1edb9a418608bcf4',
+    sizeBytes: 673534,
+    mimeType: 'image/webp',
   });
 
   const future = getCanonicalArtworkRule({
@@ -74,17 +74,17 @@ test('storage path for a future artwork stays tied to its own turma date', () =>
 
 test('artwork file metadata rejects transformations or unexpected canonical bytes', () => {
   assert.throws(() => validateArtworkFileMeta(
-    { name:'arte.png', type:'image/png', size:3585561 },
+    { name:'arte.webp', type:'image/webp', size:673533 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
   ), /arquivo original aprovado/i);
 
   assert.throws(() => validateArtworkFileMeta(
-    { name:'arte.jpeg', type:'image/jpeg', size:3585562 },
+    { name:'arte.jpeg', type:'image/jpeg', size:673534 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
-  ), /PNG original aprovado/i);
+  ), /arte oficial aprovada/i);
 
   assert.doesNotThrow(() => validateArtworkFileMeta(
-    { name:'arte.png', type:'image/png', size:3585562 },
+    { name:'arte.webp', type:'image/webp', size:673534 },
     { experience_key:'expedicao-jurassica', event_date:'2026-10-10' }
   ));
 });
@@ -93,9 +93,9 @@ test('public artwork URL is deterministic and uses the public storage endpoint',
   assert.equal(
     buildPublicArtworkUrl(
       'https://example.supabase.co',
-      'expedicao-jurassica-2026-10-10.png'
+      'expedicao-jurassica-2026-10-10-v2.webp'
     ),
-    'https://example.supabase.co/storage/v1/object/public/workshop-artworks/expedicao-jurassica-2026-10-10.png'
+    'https://example.supabase.co/storage/v1/object/public/workshop-artworks/expedicao-jurassica-2026-10-10-v2.webp'
   );
 });
 
