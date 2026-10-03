@@ -1,9 +1,9 @@
 const CANONICAL_ARTWORK_RULES = Object.freeze({
   'expedicao-jurassica|2026-10-10': Object.freeze({
-    storagePath: 'expedicao-jurassica-2026-10-10.png',
-    sha256: 'e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454',
-    sizeBytes: 3585562,
-    mimeType: 'image/png',
+    storagePath: 'expedicao-jurassica-2026-10-10-v2.webp',
+    sha256: 'c0dacfae9358056a43bd2d3ee339c7734b8cafa755f3622c1edb9a418608bcf4',
+    sizeBytes: 673534,
+    mimeType: 'image/webp',
   }),
   'fabrica-dos-squishy-magicos|2026-10-10': Object.freeze({
     storagePath: 'fabrica-squishy-magicos-2026-10-10.png',
@@ -37,7 +37,7 @@ export function validateArtworkFileMeta(file, workshop) {
   const rule = getCanonicalArtworkRule(workshop);
   if (rule) {
     if (String(file.type).toLowerCase() !== rule.mimeType) {
-      throw new Error('Para esta turma, envie o PNG original aprovado.');
+      throw new Error('Para esta turma, envie a arte oficial aprovada.');
     }
     if (Number(file.size) !== rule.sizeBytes) {
       throw new Error('O arquivo não corresponde ao arquivo original aprovado.');
