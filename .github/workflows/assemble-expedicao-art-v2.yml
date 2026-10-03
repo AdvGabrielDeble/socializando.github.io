@@ -33,7 +33,7 @@ jobs:
           if not parts:
               raise SystemExit("No artwork chunks found")
 
-          encoded = "".join(p.read_text().strip() for p in parts)
+          encoded = "".join("".join(p.read_text().split()) for p in parts)
           raw = base64.b64decode(encoded, validate=True)
           expected = "c0dacfae9358056a43bd2d3ee339c7734b8cafa755f3622c1edb9a418608bcf4"
           actual = hashlib.sha256(raw).hexdigest()
