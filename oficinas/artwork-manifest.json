@@ -1,6 +1,6 @@
 {
   "version": "2026-10-03",
-  "policy": "As artes canônicas devem ser copiadas byte a byte. Não redimensionar, recomprimir, recortar, converter, recolorir ou editar.",
+  "policy": "A arte-fonte aprovada não pode ser redesenhada, recortada, recolorida ou reinterpretada. Quando a entrega web exigir otimização, a cópia publicada deve preservar integralmente a composição e as dimensões, documentar a origem e o SHA-256 e permanecer imutável após aprovação.",
   "artworks": [
     {
       "experience_key": "expedicao-jurassica",
