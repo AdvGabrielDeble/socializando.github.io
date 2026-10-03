@@ -68,7 +68,7 @@ insert into public.workshops (
   4500,
   15,
   'open',
-  '/assets/oficinas/expedicao-jurassica-2026-10-10.png'
+  '/assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp'
 ),
 (
   'fabrica-dos-squishy-magicos',

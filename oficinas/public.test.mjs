@@ -79,19 +79,19 @@ test('experience themes integrate each artwork with the LP without modifying the
 
 test('experience panel keeps multiple turmas together and artwork remains session-specific', () => {
   const grouped = groupWorkshopSessions([
-    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.png' },
+    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp' },
     { ...sessions[1], imageUrl: null },
   ]);
   const model = buildWorkshopCardModel(grouped[0]);
   assert.equal(model.sessions.length, 2);
-  assert.equal(model.sessions[0].imageUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.png');
+  assert.equal(model.sessions[0].imageUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp');
   assert.equal(model.sessions[1].imageUrl, null);
-  assert.equal(model.activeArtworkUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10.png');
+  assert.equal(model.activeArtworkUrl, 'assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp');
 });
 
 test('experience HTML renders artwork as an integrated visual panel with a live availability bridge', () => {
   const model = buildWorkshopCardModel(groupWorkshopSessions([
-    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10.png' },
+    { ...sessions[0], imageUrl: 'assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp' },
     { ...sessions[1], imageUrl: null },
   ])[0]);
   const html = buildWorkshopExperienceHtml(model);
@@ -174,4 +174,14 @@ test('payment copy explains that reporting the Pix immediately consumes one avai
   const source = readFileSync(new URL('./public.js', import.meta.url), 'utf8');
   assert.match(source, /Ao informar o Pix como efetuado, uma vaga será abatida imediatamente/i);
   assert.match(source, /Pagamento: Pix efetuado —/i);
+});
+
+
+test('gendered workshop targeting is absent from the public workshop sources', () => {
+  const sources = [
+    readFileSync(new URL('../index.html', import.meta.url), 'utf8'),
+    readFileSync(new URL('./public.js', import.meta.url), 'utf8'),
+    readFileSync(new URL('./seed.sql', import.meta.url), 'utf8'),
+  ].join('\n');
+  assert.doesNotMatch(sources, /para\s+(?:meninos|meninas)/i);
 });

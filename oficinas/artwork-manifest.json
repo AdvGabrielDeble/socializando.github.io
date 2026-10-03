@@ -1,16 +1,19 @@
 {
-  "version": "v4.6.0",
-  "policy": "As artes canônicas devem ser copiadas byte a byte. Não redimensionar, recomprimir, recortar, converter, recolorir ou editar.",
+  "version": "2026-10-03",
+  "policy": "A arte-fonte aprovada não pode ser redesenhada, recortada, recolorida ou reinterpretada. Quando a entrega web exigir otimização, a cópia publicada deve preservar integralmente a composição e as dimensões, documentar a origem e o SHA-256 e permanecer imutável após aprovação.",
   "artworks": [
     {
       "experience_key": "expedicao-jurassica",
-      "source_filename": "Imagem do ChatGPT 27 de set. de 2026, 15_36_40.png",
-      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10.png",
-      "sha256": "e0831d1c3580dcfafde231d5bf7cc45f4f92f86fba730ae933804cccc1742454",
-      "bytes": 3585562,
-      "width": 1024,
-      "height": 1536,
-      "status": "source-verified-binary-in-repository"
+      "source_filename": "DINO.png",
+      "target_path": "assets/oficinas/expedicao-jurassica-2026-10-10-v2.webp",
+      "sha256": "c0dacfae9358056a43bd2d3ee339c7734b8cafa755f3622c1edb9a418608bcf4",
+      "bytes": 673534,
+      "width": 1365,
+      "height": 2048,
+      "status": "approved-2026-10-03-published-web-asset",
+      "source_sha256": "6940fca9541736a3f67f9f59fe3971ab63b679b48c77b802bb00adc13384b615",
+      "source_bytes": 5419125,
+      "mime_type": "image/webp"
     },
     {
       "experience_key": "fabrica-dos-squishy-magicos",
@@ -24,5 +27,5 @@
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Artes atualizadas aprovadas em 27/09/2026. A nomenclatura pública correta é Squishy. Os PNGs foram transferidos para o repositório sem edição, recorte, recompressão ou conversão; a montagem binária foi validada por SHA-256 antes do commit."
+  "notes": "Expedição Jurássica atualizada em 03/10/2026 a partir da nova arte DINO.png enviada e aprovada. O arquivo publicado na LP é a cópia web validada por SHA-256. Fábrica dos Squishy Mágicos permanece inalterada."
 }
