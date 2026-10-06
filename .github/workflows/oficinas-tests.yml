@@ -12,6 +12,7 @@ on:
       - hotfix/v4.7.2-price-45
       - feature/v4.8.0-admin-auth
       - feature/v5-financial-foundation
+      - fix/admin-manual-confirm-complete-registration-2026-10-06
   workflow_dispatch:
 
 jobs:
