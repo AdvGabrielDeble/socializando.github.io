@@ -1,3 +1,5 @@
+import { OFICINAS_CONFIG } from './config.js';
+
 const CANONICAL_ARTWORK_RULES = Object.freeze({
   'expedicao-jurassica|2026-10-10': Object.freeze({
     storagePath: 'expedicao-jurassica-2026-10-10-v2.webp',
@@ -88,8 +90,10 @@ export function summarizeWorkshops(workshops = [], registrations = []) {
   });
 }
 
-export function canConfirmRegistration(registration) {
-  return registration?.status === 'payment_reported';
+export function canConfirmRegistration(registration, workshopSummary = {}) {
+  if (registration?.status === 'payment_reported') return true;
+  if (registration?.status !== 'pending_payment') return false;
+  return Number(workshopSummary.availableSpots) > 0;
 }
 
 
@@ -276,9 +280,16 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
       return parse(await fetchImpl(`${url}/rest/v1/admin_audit_log?select=*&order=created_at.desc&limit=50`, { headers: authHeaders(token) }));
     },
     async updateRegistrationStatus(id, status, token) {
-      return parse(await fetchImpl(`${url}/rest/v1/registrations?id=eq.${encodeURIComponent(id)}`, {
+      // O backend já bloqueia overbooking com lock por turma.
+      // A condição de status evita confirmar uma inscrição cancelada em outra sessão.
+      const allowedFrom = status === 'confirmed' ? '&status=in.(pending_payment,payment_reported)' : '';
+      const updated = await parse(await fetchImpl(`${url}/rest/v1/registrations?id=eq.${encodeURIComponent(id)}${allowedFrom}`, {
         method: 'PATCH', headers: { ...authHeaders(token), Prefer: 'return=representation' }, body: JSON.stringify({ status }),
       }));
+      if (!Array.isArray(updated) || updated.length !== 1) {
+        throw new Error('Esta inscrição mudou de situação. Atualize o painel antes de confirmar.');
+      }
+      return updated;
     },
     async createSession(session, token) {
       return parse(await fetchImpl(`${url}/rest/v1/workshops`, {
@@ -318,7 +329,56 @@ function dateLabel(date) {
 }
 
 function statusLabel(status) {
-  return ({ pending_payment:'Aguardando Pix', payment_reported:'Pix informado', confirmed:'Confirmada', cancelled:'Cancelada' })[status] || status;
+  return ({ pending_payment:'Aguardando Pix', payment_reported:'Pix informado', confirmed:'Confirmada', cancelled:'Cancelada', expired:'Expirada' })[status] || status;
+}
+
+function registrationAgeLabel(registration) {
+  const age = registration?.child_age;
+  return age === null || age === undefined || String(age).trim() === ''
+    ? 'Não informada'
+    : `${age} anos`;
+}
+
+function registrationField(value, fallback = 'Não informado') {
+  return String(value ?? '').trim() || fallback;
+}
+
+function priceLabel(cents) {
+  return new Intl.NumberFormat('pt-BR', { style:'currency', currency:'BRL' })
+    .format((Number(cents) || 0) / 100).replace(/\u00a0/g, ' ');
+}
+
+export function buildAdminRegistrationWhatsAppMessage({ workshop, registration }) {
+  const w = workshop || {};
+  const r = registration || {};
+  const start = String(w.start_time || '').slice(0, 5);
+  const end = String(w.end_time || '').slice(0, 5);
+  return [
+    `*OFICINA: ${registrationField(w.title, 'Oficina').toUpperCase()}*`,
+    `Data: ${dateLabel(w.event_date) || 'Não informada'}`,
+    `Horário: ${start || '--:--'} às ${end || '--:--'}`,
+    '',
+    `Responsável: ${registrationField(r.responsible_name)}`,
+    `WhatsApp: ${registrationField(r.responsible_whatsapp)}`,
+    `E-mail: ${registrationField(r.responsible_email)}`,
+    '',
+    `Criança: ${registrationField(r.child_name)}`,
+    `Idade: ${registrationAgeLabel(r)}`,
+    `Data de nascimento: ${dateLabel(r.child_birth_date) || 'Não informada'}`,
+    `Observações: ${registrationField(r.notes, 'Não informadas')}`,
+    '',
+    `Valor: ${priceLabel(r.amount_cents)}`,
+    `Referência: ${registrationField(r.payment_reference)}`,
+    `Situação: ${statusLabel(r.status)}`,
+  ].join('\n');
+}
+
+export function buildAdminRegistrationWhatsAppUrl(number, workshop, registration) {
+  const digits = String(number || '').replace(/\D/g, '');
+  if (!digits) throw new Error('WhatsApp oficial não configurado.');
+  return `https://wa.me/${digits}?text=${encodeURIComponent(
+    buildAdminRegistrationWhatsAppMessage({ workshop, registration })
+  )}`;
 }
 
 async function initAdmin() {
@@ -426,7 +486,7 @@ async function initAdmin() {
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.2</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.3</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
@@ -565,16 +625,25 @@ async function initAdmin() {
               <div class="admin-registrations">
                 ${summary.registrations.length ? summary.registrations.map(reg => `
                   <div class="admin-registration" data-registration-id="${esc(reg.id)}" data-registration-status="${esc(reg.status)}">
-                    <div>
+                    <div class="admin-registration__identity">
                       <strong>${esc(reg.child_name)}</strong>
-                      <span>${esc(reg.responsible_name)}</span>
-                      <a href="${esc(whatsappHref(reg.responsible_whatsapp))}" target="_blank" rel="noopener">WhatsApp: ${esc(reg.responsible_whatsapp)}</a>
-                      <small>${esc(reg.responsible_email || '')}</small>
-                      <small>Ref.: ${esc(reg.payment_reference || '')}</small>
+                      <span>Responsável: ${esc(reg.responsible_name)}</span>
+                      <a href="${esc(whatsappHref(reg.responsible_whatsapp))}" target="_blank" rel="noopener">WhatsApp do responsável: ${esc(reg.responsible_whatsapp)}</a>
+                      <div class="admin-registration__details">
+                        <span class="admin-registration__age"><b>Idade:</b> ${esc(registrationAgeLabel(reg))}</span>
+                        <span><b>Nascimento:</b> ${esc(dateLabel(reg.child_birth_date) || 'Não informada')}</span>
+                        <span><b>E-mail:</b> ${esc(registrationField(reg.responsible_email))}</span>
+                        <span><b>Valor:</b> ${esc(priceLabel(reg.amount_cents))}</span>
+                        <span><b>Referência Pix:</b> ${esc(registrationField(reg.payment_reference))}</span>
+                        <span class="admin-registration__notes"><b>Observações:</b> ${esc(registrationField(reg.notes, 'Não informadas'))}</span>
+                      </div>
+                      <a class="admin-registration__share" data-socializando-whatsapp
+                         href="${esc(buildAdminRegistrationWhatsAppUrl(OFICINAS_CONFIG.whatsapp.number, summary, reg))}"
+                         target="_blank" rel="noopener">Encaminhar dados completos ao WhatsApp Socializando</a>
                     </div>
                     <span class="admin-status admin-status--${esc(reg.status)}">${esc(statusLabel(reg.status))}</span>
                     <div class="admin-registration__actions">
-                      <button type="button" data-confirm ${canConfirmRegistration(reg) ? '' : 'disabled'}>Confirmar</button>
+                      <button type="button" data-confirm ${canConfirmRegistration(reg, summary) ? '' : 'disabled'}>${reg.status === 'pending_payment' ? 'Confirmar manualmente' : 'Confirmar'}</button>
                       <button type="button" data-cancel ${reg.status === 'cancelled' ? 'disabled' : ''}>Cancelar</button>
                     </div>
                   </div>`).join('') : '<p class="admin-empty">Nenhuma inscrição nesta turma.</p>'}
@@ -697,6 +766,14 @@ async function initAdmin() {
         const regNode = event.target.closest('[data-registration-id]');
         try {
           if (event.target.matches('[data-confirm]') && regNode) {
+            const registration = summary.registrations.find((item) => item.id === regNode.dataset.registrationId);
+            if (!canConfirmRegistration(registration, summary)) {
+              throw new Error('Esta inscrição não pode ser confirmada: verifique as vagas e o status atual.');
+            }
+            if (registration.status === 'pending_payment' &&
+                !globalThis.confirm('Confirmar manualmente esta inscrição? Faça isso somente após conferir o recebimento do Pix na conta do Socializando. Uma vaga será ocupada.')) {
+              return;
+            }
             await api.updateRegistrationStatus(regNode.dataset.registrationId, 'confirmed', token);
             await loadDashboard();
           } else if (event.target.matches('[data-cancel]') && regNode) {
