@@ -406,7 +406,7 @@ test('admin WhatsApp link goes to the official Socializando account with complet
 test('admin UI displays full registration data and manual confirmation from awaiting Pix', () => {
   const source=readFileSync(new URL('./admin.js',import.meta.url),'utf8');
   for(const field of [
-    'reg.child_age','reg.child_birth_date','reg.notes','reg.responsible_name',
+    'registrationAgeLabel(reg)','registration?.child_age','reg.child_birth_date','reg.notes','reg.responsible_name',
     'reg.responsible_email','reg.responsible_whatsapp','reg.amount_cents',
     'reg.payment_reference','data-confirm','data-socializando-whatsapp',
   ]) assert.ok(source.includes(field),`Campo do cadastro ausente do painel: ${field}`);
