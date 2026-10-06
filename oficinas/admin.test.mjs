@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -27,9 +27,11 @@ test('summarizeWorkshops computes occupied and available by turma', () => {
 test('canConfirmRegistration permits payment_reported even when it already occupies the last spot', () => {
   const row = summarizeWorkshops(workshops, regs)[0];
   assert.equal(canConfirmRegistration(regs[1], row), true);
-  assert.equal(canConfirmRegistration(regs[2], row), false);
+  assert.equal(canConfirmRegistration(regs[2], row), true);
   assert.equal(canConfirmRegistration(regs[0], row), false);
   assert.equal(canConfirmRegistration(regs[1], { ...row, availableSpots: 0 }), true);
+  assert.equal(canConfirmRegistration(regs[2], { ...row, availableSpots: 0 }), false);
+  assert.equal(canConfirmRegistration(regs[3], row), false);
 });
 
 test('buildNewSession reuses experience data but never reuses a date-stamped artwork for another date', () => {
@@ -340,4 +342,74 @@ test('admin login surfaces backend authentication errors instead of generic HTTP
     () => api.signInWithPassword('SOCIALIZANDO', 'senha-incorreta'),
     /Usuário ou senha inválidos\./
   );
+});
+
+test('manual confirmation is permitted from pending Pix when there is space, without bypassing capacity', () => {
+  assert.equal(canConfirmRegistration({ status:'pending_payment' }, { availableSpots:1 }), true);
+  assert.equal(canConfirmRegistration({ status:'pending_payment' }, { availableSpots:0 }), false);
+  assert.equal(canConfirmRegistration({ status:'payment_reported' }, { availableSpots:0 }), true);
+  assert.equal(canConfirmRegistration({ status:'confirmed' }, { availableSpots:3 }), false);
+  assert.equal(canConfirmRegistration({ status:'cancelled' }, { availableSpots:3 }), false);
+});
+
+test('admin WhatsApp handoff carries all registration fields including age, birth date and notes', () => {
+  const message = buildAdminRegistrationWhatsAppMessage({
+    workshop: {
+      title:'Expedição Jurássica',
+      event_date:'2026-10-10',
+      start_time:'14:00:00',
+      end_time:'15:30:00',
+    },
+    registration: {
+      responsible_name:'Maria da Silva',
+      responsible_whatsapp:'53999999999',
+      responsible_email:'maria@example.com',
+      child_name:'João da Silva',
+      child_age:7,
+      child_birth_date:'2019-04-12',
+      notes:'Alergia a amendoim',
+      amount_cents:4500,
+      payment_reference:'SJABC123',
+      status:'pending_payment',
+    },
+  });
+  for (const fragment of [
+    'OFICINA: EXPEDIÇÃO JURÁSSICA',
+    'Data: 10/10/2026',
+    'Horário: 14:00 às 15:30',
+    'Responsável: Maria da Silva',
+    'WhatsApp: 53999999999',
+    'E-mail: maria@example.com',
+    'Criança: João da Silva',
+    'Idade: 7 anos',
+    'Data de nascimento: 12/04/2019',
+    'Observações: Alergia a amendoim',
+    'Valor: R$ 45,00',
+    'Referência: SJABC123',
+    'Situação: Aguardando Pix',
+  ]) assert.ok(message.includes(fragment), `Campo ausente: ${fragment}`);
+  assert.doesNotMatch(message, /public_token|SECRET-TOKEN/);
+  assert.doesNotMatch(message, /pagamento confirmado/i);
+});
+
+test('admin WhatsApp link goes to the official Socializando account with complete content', () => {
+  const url = buildAdminRegistrationWhatsAppUrl('5553999519569', {
+    title:'Expedição Jurássica',
+    event_date:'2026-10-10', start_time:'14:00',end_time:'15:30',
+  }, {child_name:'Mariana',child_age:8,status:'confirmed',amount_cents:4500});
+  assert.match(url, /^https:\/\/wa\.me\/5553999519569\?text=/);
+  const message = decodeURIComponent(url.split('?text=')[1]);
+  assert.match(message, /Idade: 8 anos/);
+  assert.match(message, /Situação: Confirmada/);
+});
+
+test('admin UI displays full registration data and manual confirmation from awaiting Pix', () => {
+  const source=readFileSync(new URL('./admin.js',import.meta.url),'utf8');
+  for(const field of [
+    'reg.child_age','reg.child_birth_date','reg.notes','reg.responsible_name',
+    'reg.responsible_email','reg.responsible_whatsapp','reg.amount_cents',
+    'reg.payment_reference','data-confirm','data-socializando-whatsapp',
+  ]) assert.ok(source.includes(field),`Campo do cadastro ausente do painel: ${field}`);
+  assert.match(source, /Confirmar manualmente/);
+  assert.match(source, /canConfirmRegistration\(reg, summary\)/);
 });
