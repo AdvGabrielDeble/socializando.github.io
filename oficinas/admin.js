@@ -766,8 +766,8 @@ async function initAdmin() {
         const regNode = event.target.closest('[data-registration-id]');
         try {
           if (event.target.matches('[data-confirm]') && regNode) {
-            const registration = summary.registrations.find((item) => item.id === regNode.dataset.registrationId);
-            if (!canConfirmRegistration(registration, summary)) {
+            const registration = workshop.registrations.find((item) => item.id === regNode.dataset.registrationId);
+            if (!canConfirmRegistration(registration, workshop)) {
               throw new Error('Esta inscrição não pode ser confirmada: verifique as vagas e o status atual.');
             }
             if (registration.status === 'pending_payment' &&

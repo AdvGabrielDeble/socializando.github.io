@@ -413,3 +413,33 @@ test('admin UI displays full registration data and manual confirmation from awai
   assert.match(source, /Confirmar manualmente/);
   assert.match(source, /canConfirmRegistration\(reg, summary\)/);
 });
+
+test('manual-confirm click resolves registration from the in-scope workshop (regression: summary is not defined)', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  const handlerStart = source.indexOf("card.addEventListener('click', async (event) => {");
+  const handlerEnd = source.indexOf("      });\n    });", handlerStart);
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart, 'Handler de clique administrativo não encontrado');
+
+  const handler = source.slice(handlerStart, handlerEnd);
+  const first = handler.indexOf('const registration = ');
+  const stop = handler.indexOf("if (registration.status === 'pending_payment'", first);
+  assert.ok(first >= 0 && stop > first, 'Trecho de confirmação manual não encontrado');
+
+  // Executa exatamente o bloco da implementação real. Referências fora de escopo,
+  // como o antigo "summary", causam ReferenceError neste teste.
+  const actualBlock = handler.slice(first, stop);
+  const runBlock = new Function('workshop', 'regNode', 'canConfirmRegistration',
+    actualBlock + '\nreturn registration;');
+
+  const workshop = {
+    availableSpots: 1,
+    registrations: [{ id: 'r-pending', status: 'pending_payment' }],
+  };
+  const regNode = { dataset: { registrationId: 'r-pending' } };
+  assert.deepEqual(runBlock(workshop, regNode, canConfirmRegistration), workshop.registrations[0]);
+
+  assert.throws(
+    () => runBlock({ ...workshop, availableSpots: 0 }, regNode, canConfirmRegistration),
+    /não pode ser confirmada/i
+  );
+});
