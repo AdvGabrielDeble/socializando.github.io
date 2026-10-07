@@ -180,3 +180,18 @@ test('public workshop RPCs explicitly revoke stale authenticated grants', () => 
   assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.create_public_registration\(uuid,text,text,text,text,integer,date,text\)\s+from\s+authenticated/i);
   assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.report_public_payment\(uuid,uuid\)\s+from\s+authenticated/i);
 });
+
+
+test('authenticated admins can delete only discardable registrations', () => {
+  assert.match(sql, /create\s+policy\s+"admins can delete discardable registrations"[\s\S]*?on\s+public\.registrations[\s\S]*?for\s+delete[\s\S]*?to\s+authenticated/i);
+  assert.match(sql, /public\.is_workshop_admin\(\)[\s\S]*?status\s+in\s*\(\s*'pending_payment'\s*,\s*'cancelled'\s*,\s*'expired'\s*\)/i);
+  assert.match(sql, /grant\s+delete\s+on\s+public\.registrations\s+to\s+authenticated/i);
+  assert.doesNotMatch(sql, /grant\s+delete\s+on\s+public\.registrations\s+to\s+anon/i);
+});
+
+test('registration deletion is audited without exposing trigger execution', () => {
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.audit_registration_admin_delete\(\)/i);
+  assert.match(sql, /'registration_deleted'/i);
+  assert.match(sql, /create\s+trigger\s+registrations_admin_delete_audit[\s\S]*?after\s+delete\s+on\s+public\.registrations/i);
+  assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.audit_registration_admin_delete\(\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
+});

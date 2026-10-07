@@ -96,6 +96,10 @@ export function canConfirmRegistration(registration, workshopSummary = {}) {
   return Number(workshopSummary.availableSpots) > 0;
 }
 
+export function canDeleteRegistration(registration) {
+  return ['pending_payment','cancelled','expired'].includes(registration?.status);
+}
+
 
 function slugify(value) {
   return String(value || '')
@@ -291,6 +295,19 @@ export function createAdminApi({ config = globalThis.SOCIALIZANDO_SUPABASE, fetc
       }
       return updated;
     },
+    async deleteRegistration(id, token) {
+      const deleted = await parse(await fetchImpl(
+        `${url}/rest/v1/registrations?id=eq.${encodeURIComponent(id)}&status=in.(pending_payment,cancelled,expired)`,
+        {
+          method: 'DELETE',
+          headers: { ...authHeaders(token), Prefer: 'return=representation' },
+        }
+      ));
+      if (!Array.isArray(deleted) || deleted.length !== 1) {
+        throw new Error('Esta inscrição não pode ser excluída. Inscrições efetivas devem ser canceladas antes.');
+      }
+      return deleted[0];
+    },
     async createSession(session, token) {
       return parse(await fetchImpl(`${url}/rest/v1/workshops`, {
         method: 'POST', headers: { ...authHeaders(token), Prefer: 'return=representation' }, body: JSON.stringify(session),
@@ -482,11 +499,12 @@ async function initAdmin() {
       workshop_updated:'Oficina/turma alterada',
       workshop_deleted:'Oficina/turma excluída',
       registration_status_changed:'Status de inscrição alterado',
+      registration_deleted:'Inscrição excluída',
     })[item.action] || item.action;
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.3</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.4</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
@@ -645,6 +663,9 @@ async function initAdmin() {
                     <div class="admin-registration__actions">
                       <button type="button" data-confirm ${canConfirmRegistration(reg, summary) ? '' : 'disabled'}>${reg.status === 'pending_payment' ? 'Confirmar manualmente' : 'Confirmar'}</button>
                       <button type="button" data-cancel ${reg.status === 'cancelled' ? 'disabled' : ''}>Cancelar</button>
+                      <button type="button" class="admin-delete-registration" data-delete-registration
+                        ${canDeleteRegistration(reg) ? '' : 'disabled'}
+                        title="${canDeleteRegistration(reg) ? 'Excluir cadastro descartado' : 'Cancele a inscrição efetiva antes de excluir'}">Excluir</button>
                     </div>
                   </div>`).join('') : '<p class="admin-empty">Nenhuma inscrição nesta turma.</p>'}
               </div>
@@ -778,6 +799,17 @@ async function initAdmin() {
             await loadDashboard();
           } else if (event.target.matches('[data-cancel]') && regNode) {
             await api.updateRegistrationStatus(regNode.dataset.registrationId, 'cancelled', token);
+            await loadDashboard();
+          } else if (event.target.matches('[data-delete-registration]') && regNode) {
+            const registration = workshop.registrations.find((item) => item.id === regNode.dataset.registrationId);
+            if (!canDeleteRegistration(registration)) {
+              throw new Error('Inscrições efetivas precisam ser canceladas antes de serem excluídas.');
+            }
+            const participant = registrationField(registration.child_name, 'esta inscrição');
+            if (!globalThis.confirm(`Excluir definitivamente a inscrição de ${participant}? O cadastro sairá do painel e esta ação não poderá ser desfeita.`)) {
+              return;
+            }
+            await api.deleteRegistration(regNode.dataset.registrationId, token);
             await loadDashboard();
           } else if (event.target.matches('[data-capacity-delta]')) {
             const capacity = adjustCapacity(workshop.capacity, Number(event.target.dataset.capacityDelta), workshop.occupiedCount);
