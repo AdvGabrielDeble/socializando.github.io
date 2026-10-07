@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, canDeleteRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -442,4 +442,61 @@ test('manual-confirm click resolves registration from the in-scope workshop (reg
     () => runBlock({ ...workshop, availableSpots: 0 }, regNode, canConfirmRegistration),
     /não pode ser confirmada/i
   );
+});
+
+
+test('only disposable registration states can be deleted from the admin panel', () => {
+  assert.equal(canDeleteRegistration({ status:'pending_payment' }), true);
+  assert.equal(canDeleteRegistration({ status:'cancelled' }), true);
+  assert.equal(canDeleteRegistration({ status:'expired' }), true);
+  assert.equal(canDeleteRegistration({ status:'payment_reported' }), false);
+  assert.equal(canDeleteRegistration({ status:'confirmed' }), false);
+});
+
+test('admin API deletes only disposable registration states and requires one returned row', async () => {
+  let request;
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return {
+        ok:true,
+        status:200,
+        async json(){ return [{ id:'r-pending', status:'pending_payment' }]; },
+      };
+    },
+  });
+
+  const deleted = await api.deleteRegistration('r-pending', 'jwt-token');
+  assert.equal(deleted.id, 'r-pending');
+  assert.equal(request.options.method, 'DELETE');
+  assert.equal(request.options.headers.Authorization, 'Bearer jwt-token');
+  assert.match(request.options.headers.Prefer, /return=representation/);
+  assert.match(request.url, /registrations\?id=eq\.r-pending/);
+  assert.match(request.url, /status=in\.\(pending_payment,cancelled,expired\)/);
+});
+
+test('admin API refuses deletion when backend returns no disposable registration', async () => {
+  const api = createAdminApi({
+    config: { url:'https://example.supabase.co', anonKey:'sb_publishable_example' },
+    fetchImpl: async () => ({
+      ok:true,
+      status:200,
+      async json(){ return []; },
+    }),
+  });
+
+  await assert.rejects(
+    () => api.deleteRegistration('r-confirmed', 'jwt-token'),
+    /não pode ser excluída/i
+  );
+});
+
+test('admin UI exposes delete action but protects effective registrations', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  assert.match(source, /data-delete-registration/);
+  assert.match(source, /canDeleteRegistration\(reg\)/);
+  assert.match(source, /Inscrições efetivas precisam ser canceladas antes de serem excluídas/);
+  assert.match(source, /Excluir definitivamente a inscrição/);
+  assert.match(source, /api\.deleteRegistration/);
 });
