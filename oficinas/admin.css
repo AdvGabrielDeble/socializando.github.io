@@ -63,3 +63,8 @@
 .admin-registration__actions button{white-space:normal}
 @media(max-width:900px){.admin-registration__actions{min-width:0;flex-direction:row}}
 @media(max-width:560px){.admin-registration__details{grid-template-columns:1fr}.admin-registration__details .admin-registration__notes{grid-column:auto}}
+
+/* V4.8.4 — exclusão segura de inscrições */
+.admin-registration__actions [data-cancel]{background:#f5eaf0;color:#8e214b}
+.admin-registration__actions .admin-delete-registration{background:#fff0f3;color:#9a174c;border:1px solid rgba(154,23,76,.16)}
+.admin-registration__actions .admin-delete-registration:not(:disabled):hover{background:#ffe1e8}
