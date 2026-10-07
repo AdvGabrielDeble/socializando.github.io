@@ -1010,3 +1010,60 @@ as $sql$
   group by w.id
   order by w.event_date, w.start_time;
 $sql$;
+
+
+-- =========================================================
+-- Socializando — Gestão de inscrições V4.8.4
+-- Exclusão administrativa segura de cadastros descartáveis.
+-- =========================================================
+
+drop policy if exists "admins can delete discardable registrations" on public.registrations;
+create policy "admins can delete discardable registrations"
+on public.registrations
+for delete
+to authenticated
+using (
+  public.is_workshop_admin()
+  and status in ('pending_payment','cancelled','expired')
+);
+
+grant delete on public.registrations to authenticated;
+
+create or replace function public.audit_registration_admin_delete()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $audit_registration_delete$
+begin
+  if auth.uid() is null or not public.is_workshop_admin() then
+    return old;
+  end if;
+
+  insert into public.admin_audit_log (
+    actor_user_id, actor_email, entity_type, entity_id, action, details
+  ) values (
+    auth.uid(),
+    lower(coalesce(auth.jwt()->>'email','')),
+    'registration',
+    old.id,
+    'registration_deleted',
+    jsonb_build_object(
+      'workshop_id', old.workshop_id,
+      'payment_reference', old.payment_reference,
+      'status', old.status,
+      'responsible_name', old.responsible_name,
+      'child_name', old.child_name
+    )
+  );
+
+  return old;
+end;
+$audit_registration_delete$;
+
+drop trigger if exists registrations_admin_delete_audit on public.registrations;
+create trigger registrations_admin_delete_audit
+after delete on public.registrations
+for each row execute function public.audit_registration_admin_delete();
+
+revoke all on function public.audit_registration_admin_delete() from public, anon, authenticated;
