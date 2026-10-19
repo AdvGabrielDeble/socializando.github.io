@@ -195,3 +195,10 @@ test('registration deletion is audited without exposing trigger execution', () =
   assert.match(sql, /create\s+trigger\s+registrations_admin_delete_audit[\s\S]*?after\s+delete\s+on\s+public\.registrations/i);
   assert.match(sql, /revoke\s+all\s+on\s+function\s+public\.audit_registration_admin_delete\(\)\s+from\s+public\s*,\s*anon\s*,\s*authenticated/i);
 });
+
+
+test('archived workshops remain stored but are excluded from the public workshop RPC', () => {
+  assert.match(sql, /status\s+text\s+not\s+null\s+default\s+'draft'[\s\S]*?'archived'/i);
+  assert.match(sql, /create\s+or\s+replace\s+function\s+public\.list_public_workshops\(\)[\s\S]*?where\s+w\.status\s+in\s*\(\s*'open'\s*,\s*'sold_out'\s*\)/i);
+  assert.doesNotMatch(sql, /where\s+w\.status\s+in\s*\([^)]*'archived'/i);
+});
