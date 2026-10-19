@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-03",
+  "version": "2026-10-19",
   "policy": "A arte-fonte aprovada não pode ser redesenhada, recortada, recolorida ou reinterpretada. Quando a entrega web exigir otimização, a cópia publicada deve preservar integralmente a composição e as dimensões, documentar a origem e o SHA-256 e permanecer imutável após aprovação.",
   "artworks": [
     {
@@ -24,8 +24,21 @@
       "width": 1254,
       "height": 1254,
       "status": "source-verified-binary-in-repository"
+    },
+    {
+      "experience_key": "oficina-de-slime",
+      "source_filename": "WhatsApp Image 2026-10-19 at 13.26.49.jpeg",
+      "target_path": "assets/oficinas/oficina-slime-2026-10-24.webp",
+      "sha256": "dbf85ef551f6b457c6c36088ad73f37bfb57520daef7de73cd9b0028a7d4ab4c",
+      "bytes": 44396,
+      "width": 480,
+      "height": 600,
+      "status": "approved-2026-10-19-published-web-asset",
+      "source_sha256": "3f742d4443c7ac4705ef5497b7e69c39f031c281b8e6d78f423921e1c423a64d",
+      "source_bytes": 317233,
+      "mime_type": "image/webp"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Expedição Jurássica atualizada em 03/10/2026 a partir da nova arte DINO.png enviada e aprovada. O arquivo publicado na LP é a cópia web validada por SHA-256. Fábrica dos Squishy Mágicos permanece inalterada."
+  "notes": "Expedição Jurássica e Fábrica dos Squishy Mágicos permanecem inalteradas. Oficina de Slime adicionada em 19/10/2026 para a turma de 24/10/2026 a partir da arte enviada e aprovada pelo usuário."
 }
