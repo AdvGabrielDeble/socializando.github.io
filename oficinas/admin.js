@@ -13,6 +13,12 @@ const CANONICAL_ARTWORK_RULES = Object.freeze({
     sizeBytes: 3529499,
     mimeType: 'image/png',
   }),
+  'oficina-de-slime|2026-10-24': Object.freeze({
+    storagePath: 'oficina-slime-2026-10-24.webp',
+    sha256: '3d979595a1909cfd57dae9bef30756b449837f500faca26b5404c3c5ddbb12a1',
+    sizeBytes: 49190,
+    mimeType: 'image/webp',
+  }),
 });
 
 export function getCanonicalArtworkRule(workshop) {
@@ -98,6 +104,14 @@ export function canConfirmRegistration(registration, workshopSummary = {}) {
 
 export function canDeleteRegistration(registration) {
   return ['pending_payment','cancelled','expired'].includes(registration?.status);
+}
+
+export function filterWorkshopSummaries(summaries = [], view = 'active') {
+  return summaries.filter((summary) =>
+    view === 'archived'
+      ? summary.status === 'archived'
+      : summary.status !== 'archived'
+  );
 }
 
 
@@ -476,10 +490,12 @@ async function initAdmin() {
 
   const renderDashboard = () => {
     const summaries = summarizeWorkshops(workshops, registrations);
+    const activeSummaries = filterWorkshopSummaries(summaries, 'active');
+    const archivedSummaries = filterWorkshopSummaries(summaries, 'archived');
     const sources = [...new Map(workshops.map((w) => [w.experience_key, w])).values()];
-    const totalAvailable = summaries.reduce((sum, item) => sum + item.availableSpots, 0);
-    const totalOccupied = summaries.reduce((sum, item) => sum + item.occupiedCount, 0);
-    const totalReported = summaries.reduce((sum, item) => sum + item.paymentReportedCount, 0);
+    const totalAvailable = activeSummaries.reduce((sum, item) => sum + item.availableSpots, 0);
+    const totalOccupied = activeSummaries.reduce((sum, item) => sum + item.occupiedCount, 0);
+    const totalReported = activeSummaries.reduce((sum, item) => sum + item.paymentReportedCount, 0);
     const statusOptions = [
       ['draft','Rascunho'],
       ['open','Inscrições abertas'],
@@ -504,13 +520,13 @@ async function initAdmin() {
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.8.4</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.9.0</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
       <main class="admin-main">
         <section class="admin-summary-grid">
-          <article><span>Turmas</span><strong>${summaries.length}</strong></article>
+          <article><span>Turmas ativas</span><strong>${activeSummaries.length}</strong></article>
           <article><span>Vagas disponíveis</span><strong>${totalAvailable}</strong></article>
           <article><span>Vagas ocupadas</span><strong>${totalOccupied}</strong></article>
           <article><span>Pix aguardando conferência</span><strong>${totalReported}</strong></article>
@@ -553,9 +569,20 @@ async function initAdmin() {
           </section>
         </section>
 
+        <nav class="admin-workshop-tabs" role="tablist" aria-label="Visualização das turmas">
+          <button type="button" class="is-active" data-workshop-tab="active" role="tab" aria-selected="true">
+            Ativas <span>${activeSummaries.length}</span>
+          </button>
+          <button type="button" data-workshop-tab="archived" role="tab" aria-selected="false">
+            Arquivadas <span>${archivedSummaries.length}</span>
+          </button>
+        </nav>
+
         <section class="admin-workshops">
           ${summaries.map(summary => `
-            <article class="admin-workshop" data-workshop-id="${esc(summary.id)}">
+            <article class="admin-workshop" data-workshop-id="${esc(summary.id)}"
+              data-workshop-archived="${summary.status === 'archived' ? 'true' : 'false'}"
+              ${summary.status === 'archived' ? 'hidden' : ''}>
               <div class="admin-workshop__head">
                 <div>
                   <span>${esc(dateLabel(summary.event_date))} · ${esc(String(summary.start_time||'').slice(0,5))}–${esc(String(summary.end_time||'').slice(0,5))}</span>
@@ -579,6 +606,10 @@ async function initAdmin() {
                     ${statusOptions.map(([value,label]) => `<option value="${value}" ${summary.status===value?'selected':''}>${label}</option>`).join('')}
                   </select>
                 </label>
+                <button type="button" class="admin-archive-workshop" data-archive-workshop
+                  ${summary.status === 'archived' ? 'disabled' : ''}>
+                  ${summary.status === 'archived' ? 'Arquivada' : 'Arquivar turma'}
+                </button>
                 <div class="admin-capacity-quick">
                   <span>Vagas</span>
                   <button type="button" data-capacity-delta="-1">−1</button>
@@ -687,6 +718,23 @@ async function initAdmin() {
         </section>
       </main>`;
 
+    const setWorkshopTab = (view) => {
+      root.querySelectorAll('[data-workshop-tab]').forEach((button) => {
+        const selected = button.dataset.workshopTab === view;
+        button.classList.toggle('is-active', selected);
+        button.setAttribute('aria-selected', String(selected));
+      });
+      root.querySelectorAll('[data-workshop-archived]').forEach((card) => {
+        const archived = card.dataset.workshopArchived === 'true';
+        card.hidden = view === 'archived' ? !archived : archived;
+      });
+    };
+
+    root.querySelectorAll('[data-workshop-tab]').forEach((button) => {
+      button.addEventListener('click', () => setWorkshopTab(button.dataset.workshopTab));
+    });
+    setWorkshopTab('active');
+
     root.querySelector('[data-logout]').addEventListener('click', async () => {
       try { await api.signOut(token); } catch { /* sessão local será encerrada mesmo assim */ }
       sessionStorage.removeItem('socializando-admin-token');
@@ -786,7 +834,15 @@ async function initAdmin() {
       card.addEventListener('click', async (event) => {
         const regNode = event.target.closest('[data-registration-id]');
         try {
-          if (event.target.matches('[data-confirm]') && regNode) {
+          if (event.target.matches('[data-archive-workshop]')) {
+            if (workshop.status === 'archived') return;
+            if (!globalThis.confirm(`Arquivar a turma "${workshop.title}"? Ela sairá da LP e ficará disponível na aba Arquivadas.`)) {
+              return;
+            }
+            await api.updateWorkshop(workshop.id, { status:'archived' }, token);
+            await loadDashboard();
+            return;
+          } else if (event.target.matches('[data-confirm]') && regNode) {
             const registration = workshop.registrations.find((item) => item.id === regNode.dataset.registrationId);
             if (!canConfirmRegistration(registration, workshop)) {
               throw new Error('Esta inscrição não pode ser confirmada: verifique as vagas e o status atual.');
