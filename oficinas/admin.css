@@ -68,3 +68,16 @@
 .admin-registration__actions [data-cancel]{background:#f5eaf0;color:#8e214b}
 .admin-registration__actions .admin-delete-registration{background:#fff0f3;color:#9a174c;border:1px solid rgba(154,23,76,.16)}
 .admin-registration__actions .admin-delete-registration:not(:disabled):hover{background:#ffe1e8}
+
+
+/* V4.9.0 — organização de turmas ativas e arquivadas */
+.admin-workshop-tabs{display:flex;align-items:center;gap:10px;margin:22px 0 4px;padding:6px;width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:999px;background:#fff}
+.admin-workshop-tabs button{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:10px 16px;background:transparent;color:var(--muted);font-weight:900;cursor:pointer}
+.admin-workshop-tabs button span{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--soft);color:var(--deep);font-size:.76rem}
+.admin-workshop-tabs button.is-active{background:var(--deep);color:#fff}
+.admin-workshop-tabs button.is-active span{background:rgba(255,255,255,.18);color:#fff}
+.admin-archive-workshop{align-self:end;border:1px solid rgba(49,19,111,.15);border-radius:12px;padding:11px 14px;background:#f4efff;color:var(--deep);font-weight:900;cursor:pointer}
+.admin-archive-workshop:not(:disabled):hover{background:#e9ddff}
+.admin-archive-workshop:disabled{opacity:.55;cursor:default}
+.admin-workshop[data-workshop-archived="true"]{border-style:dashed;background:#fcfbff}
+@media(max-width:700px){.admin-workshop-tabs{width:100%;border-radius:18px}.admin-workshop-tabs button{flex:1;justify-content:center}.admin-archive-workshop{width:100%}}
