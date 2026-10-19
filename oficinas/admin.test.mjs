@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, canDeleteRegistration, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, canDeleteRegistration, filterWorkshopSummaries, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -499,4 +499,49 @@ test('admin UI exposes delete action but protects effective registrations', () =
   assert.match(source, /Inscrições efetivas precisam ser canceladas antes de serem excluídas/);
   assert.match(source, /Excluir definitivamente a inscrição/);
   assert.match(source, /api\.deleteRegistration/);
+});
+
+
+test('Slime artwork canonical rule matches the verified 24 October asset', () => {
+  assert.deepEqual(getCanonicalArtworkRule({
+    experience_key:'oficina-de-slime',
+    event_date:'2026-10-24',
+  }), {
+    storagePath:'oficina-slime-2026-10-24.webp',
+    sha256:'3d979595a1909cfd57dae9bef30756b449837f500faca26b5404c3c5ddbb12a1',
+    sizeBytes:49190,
+    mimeType:'image/webp',
+  });
+});
+
+test('workshop views separate active and archived turmas without deleting data', () => {
+  const rows = [
+    { id:'active-1', status:'open' },
+    { id:'active-2', status:'closed' },
+    { id:'archived-1', status:'archived' },
+  ];
+  assert.deepEqual(filterWorkshopSummaries(rows,'active').map(x=>x.id), ['active-1','active-2']);
+  assert.deepEqual(filterWorkshopSummaries(rows,'archived').map(x=>x.id), ['archived-1']);
+});
+
+test('admin UI has Ativas and Arquivadas tabs plus explicit archive action', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  assert.match(source, /data-workshop-tab="active"/);
+  assert.match(source, /data-workshop-tab="archived"/);
+  assert.match(source, /Ativas/);
+  assert.match(source, /Arquivadas/);
+  assert.match(source, /data-archive-workshop/);
+  assert.match(source, /Arquivar turma/);
+  assert.match(source, /status:'archived'/);
+  assert.match(source, /Ela sairá da LP e ficará disponível na aba Arquivadas/);
+  assert.match(source, /data-workshop-archived/);
+  assert.match(source, /setWorkshopTab\('active'\)/);
+});
+
+test('dashboard headline totals exclude archived turmas', () => {
+  const source = readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
+  assert.match(source, /const activeSummaries = filterWorkshopSummaries\(summaries, 'active'\)/);
+  assert.match(source, /const archivedSummaries = filterWorkshopSummaries\(summaries, 'archived'\)/);
+  assert.match(source, /totalAvailable = activeSummaries\.reduce/);
+  assert.match(source, /Turmas ativas/);
 });
