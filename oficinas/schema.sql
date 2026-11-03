@@ -14,6 +14,7 @@ create table if not exists public.workshops (
   start_time time,
   end_time time,
   minimum_age integer not null default 5 check (minimum_age >= 0),
+  maximum_age integer,
   age_label text,
   price_cents integer not null check (price_cents >= 0),
   capacity integer not null check (capacity > 0),
@@ -27,6 +28,7 @@ create table if not exists public.workshops (
 -- Migração segura caso a tabela já exista de uma etapa anterior do MVP.
 alter table public.workshops add column if not exists experience_key text;
 alter table public.workshops add column if not exists minimum_age integer default 5;
+alter table public.workshops add column if not exists maximum_age integer;
 update public.workshops set experience_key = slug where experience_key is null;
 update public.workshops set minimum_age = 5 where minimum_age is null;
 alter table public.workshops alter column experience_key set not null;
@@ -1067,3 +1069,55 @@ after delete on public.registrations
 for each row execute function public.audit_registration_admin_delete();
 
 revoke all on function public.audit_registration_admin_delete() from public, anon, authenticated;
+
+
+-- V4.9.1 — Faixas etárias com limite máximo opcional.
+-- O campo maximum_age é nulo nas turmas apenas com idade mínima.
+do $age_constraint$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid='public.workshops'::regclass
+      and conname='workshops_maximum_age_valid'
+  ) then
+    alter table public.workshops
+      add constraint workshops_maximum_age_valid
+      check (maximum_age is null or maximum_age between minimum_age and 18);
+  end if;
+end;
+$age_constraint$;
+
+-- Valida a idade na camada de banco em todos os fluxos de inscrição:
+-- Pix manual e Pix automático. Não altera inscrições já registradas.
+create or replace function public.enforce_workshop_registration_age()
+returns trigger
+language plpgsql
+security invoker
+set search_path=public
+as $age_guard$
+declare
+  v_minimum integer;
+  v_maximum integer;
+begin
+  select w.minimum_age, w.maximum_age into v_minimum, v_maximum
+  from public.workshops w where w.id = new.workshop_id;
+
+  if not found then
+    raise exception 'Oficina não encontrada para esta inscrição';
+  end if;
+  if new.child_age is null or new.child_age < v_minimum then
+    raise exception 'Idade abaixo da faixa mínima da oficina';
+  end if;
+  if v_maximum is not null and new.child_age > v_maximum then
+    raise exception 'Idade acima da faixa máxima da oficina';
+  end if;
+  return new;
+end;
+$age_guard$;
+
+revoke all on function public.enforce_workshop_registration_age() from public, anon, authenticated;
+
+drop trigger if exists registrations_enforce_age_range on public.registrations;
+create trigger registrations_enforce_age_range
+before insert or update of child_age, workshop_id on public.registrations
+for each row execute function public.enforce_workshop_registration_age();
