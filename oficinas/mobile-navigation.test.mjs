@@ -28,9 +28,9 @@ test('mobile navigation closes after choosing a section', () => {
 });
 
 
-test('v4.6.1 cache-busts changed CSS, site JS and workshop JS on publication', () => {
+test('cache-busts changed LP modules without affecting approved site assets', () => {
   assert.match(html, /styles\.css\?v=461/);
   assert.match(html, /script\.js\?v=461/);
   assert.match(html, /oficinas\/supabase-config\.js\?v=461/);
-  assert.match(html, /oficinas\/public\.js\?v=472/);
+  assert.match(html, /oficinas\/public\.js\?v=491/);
 });
