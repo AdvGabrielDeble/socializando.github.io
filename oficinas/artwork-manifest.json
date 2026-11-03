@@ -73,8 +73,20 @@
       "mime_type": "image/jpeg",
       "event_date": "2026-11-28",
       "status": "user-supplied-original-published-2026-11-03"
+    },
+    {
+      "experience_key": "fabrica-de-inventores",
+      "source_filename": "WhatsApp Image 2026-11-03 at 20.30.27.jpeg",
+      "target_path": "assets/oficinas/fabrica-de-inventores-2026-12-05.jpeg",
+      "sha256": "cfe3d5bc1c69e2e26779734d778b688df47d3b480d912bdf42e0f072fb1f191f",
+      "bytes": 358280,
+      "width": 1122,
+      "height": 1402,
+      "mime_type": "image/jpeg",
+      "event_date": "2026-12-05",
+      "status": "user-supplied-original-published-2026-11-03"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Oficinas de 14, 21 e 28 de novembro: artes JPEG originais fornecidas pelo usuário, publicadas sem recorte nem recompressão; três turmas independentes no banco e preços específicos por turma. Manter histórico anterior e status arquivado."
+  "notes": "Oficinas de 14, 21 e 28 de novembro: artes JPEG originais fornecidas pelo usuário, publicadas sem recorte nem recompressão; três turmas independentes no banco e preços específicos por turma. Manter histórico anterior e status arquivado. Fábrica de Inventores 05/12: original JPEG sem alterações, 10 vagas, 8 anos+, 14h-16h e R$55. Preservar as demais oficinas."
 }
