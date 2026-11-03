@@ -1,5 +1,5 @@
 {
-  "version": "2026-10-19",
+  "version": "2026-11-03",
   "policy": "A arte-fonte aprovada não pode ser redesenhada, recortada, recolorida ou reinterpretada. Quando a entrega web exigir otimização, a cópia publicada deve preservar integralmente a composição e as dimensões, documentar a origem e o SHA-256 e permanecer imutável após aprovação.",
   "artworks": [
     {
@@ -37,8 +37,44 @@
       "source_sha256": "3f742d4443c7ac4705ef5497b7e69c39f031c281b8e6d78f423921e1c423a64d",
       "source_bytes": 317233,
       "mime_type": "image/webp"
+    },
+    {
+      "experience_key": "oficina-de-squish",
+      "source_filename": "WhatsApp Image 2026-11-03 at 19.58.29.jpeg",
+      "target_path": "assets/oficinas/oficina-squish-2026-11-14.jpeg",
+      "sha256": "d48d2043ea92d2359fbdd01e30dd2f334151e716e6881ed186f80cf2a3ac8b8d",
+      "bytes": 359907,
+      "width": 1122,
+      "height": 1402,
+      "mime_type": "image/jpeg",
+      "event_date": "2026-11-14",
+      "status": "user-supplied-original-published-2026-11-03"
+    },
+    {
+      "experience_key": "oficina-de-slime",
+      "source_filename": "WhatsApp Image 2026-11-03 at 20.01.35.jpeg",
+      "target_path": "assets/oficinas/oficina-slime-2026-11-21.jpeg",
+      "sha256": "facf338fe3e08241edcad23a4ea4ab6db5fc02665013bcf1269d22d34d72a580",
+      "bytes": 375316,
+      "width": 1199,
+      "height": 1312,
+      "mime_type": "image/jpeg",
+      "event_date": "2026-11-21",
+      "status": "user-supplied-original-published-2026-11-03"
+    },
+    {
+      "experience_key": "oficina-de-gloss",
+      "source_filename": "WhatsApp Image 2026-11-03 at 20.02.37.jpeg",
+      "target_path": "assets/oficinas/oficina-gloss-2026-11-28.jpeg",
+      "sha256": "05d7819869a3d77fa3acb09850dd169d427e1a3f00bc9d7ea28bb65de82b1752",
+      "bytes": 378335,
+      "width": 1122,
+      "height": 1402,
+      "mime_type": "image/jpeg",
+      "event_date": "2026-11-28",
+      "status": "user-supplied-original-published-2026-11-03"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Expedição Jurássica e Fábrica dos Squishy Mágicos permanecem inalteradas. Oficina de Slime de 24/10/2026 usa ativo WEBP montado e validado por SHA-256 após correção de truncamento."
+  "notes": "Oficinas de 14, 21 e 28 de novembro: artes JPEG originais fornecidas pelo usuário, publicadas sem recorte nem recompressão; três turmas independentes no banco e preços específicos por turma. Manter histórico anterior e status arquivado."
 }

@@ -16,6 +16,7 @@ on:
       - hotfix/admin-confirm-summary-scope-2026-10-06
       - feature/admin-delete-registrations-2026-10-07
       - feature/archive-workshops-fix-slime-art-2026-10-19
+      - feature/oficinas-novembro-2026
   workflow_dispatch:
 
 jobs:
