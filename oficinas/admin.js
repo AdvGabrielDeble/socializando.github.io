@@ -144,6 +144,23 @@ export function adjustCapacity(currentCapacity, delta, occupiedCount = 0) {
   return Math.max(occupied || 1, next);
 }
 
+export function buildWorkshopAgeRange(minimumAge, maximumAge) {
+  const minimum = Number(minimumAge);
+  const hasMaximum = maximumAge !== null && maximumAge !== undefined && String(maximumAge).trim() !== '';
+  const maximum = hasMaximum ? Number(maximumAge) : null;
+  if (!Number.isInteger(minimum) || minimum < 0 || minimum > 18) {
+    throw new Error('Informe uma idade mínima válida, entre 0 e 18 anos.');
+  }
+  if (maximum !== null && (!Number.isInteger(maximum) || maximum < minimum || maximum > 18)) {
+    throw new Error('A idade máxima deve ser maior ou igual à mínima e não pode ultrapassar 18 anos.');
+  }
+  return {
+    minimum_age: minimum,
+    maximum_age: maximum,
+    age_label: maximum === null ? `A partir de ${minimum} anos` : `De ${minimum} a ${maximum} anos`,
+  };
+}
+
 export function buildNewWorkshop({
   title,
   shortDescription,
@@ -151,13 +168,14 @@ export function buildNewWorkshop({
   startTime,
   endTime,
   minimumAge,
+  maximumAge,
   priceReais,
   capacity,
 }) {
   const cleanTitle = String(title || '').trim();
   const experienceKey = slugify(cleanTitle);
   if (!cleanTitle || !experienceKey || !eventDate) throw new Error('Preencha nome e data da nova oficina.');
-  const age = Math.max(0, Number(minimumAge) || 0);
+  const age = buildWorkshopAgeRange(minimumAge, maximumAge);
   const spots = Math.max(1, Number(capacity) || 1);
 
   return {
@@ -168,8 +186,7 @@ export function buildNewWorkshop({
     event_date: eventDate,
     start_time: startTime || null,
     end_time: endTime || null,
-    minimum_age: age,
-    age_label: `A partir de ${age} anos`,
+    ...age,
     price_cents: reaisToCents(priceReais),
     capacity: spots,
     status: 'open',
@@ -184,6 +201,7 @@ export function buildWorkshopPatch({
   startTime,
   endTime,
   minimumAge,
+  maximumAge,
   priceReais,
   capacity,
   status,
@@ -193,15 +211,14 @@ export function buildWorkshopPatch({
   if (spots < occupied) {
     throw new Error(`A capacidade não pode ficar abaixo das ${occupied} vagas já ocupadas.`);
   }
-  const age = Math.max(0, Number(minimumAge) || 0);
+  const age = buildWorkshopAgeRange(minimumAge, maximumAge);
   return {
     title: String(title || '').trim(),
     short_description: String(shortDescription || '').trim() || null,
     event_date: eventDate || null,
     start_time: startTime || null,
     end_time: endTime || null,
-    minimum_age: age,
-    age_label: `A partir de ${age} anos`,
+    ...age,
     price_cents: reaisToCents(priceReais),
     capacity: spots,
     status: status || 'draft',
@@ -223,8 +240,9 @@ export function buildNewSession(source, { eventDate, startTime, endTime, capacit
     event_date: eventDate,
     start_time: startTime || source.start_time,
     end_time: endTime || source.end_time,
-    minimum_age: Number(source.minimum_age || 5),
-    age_label: source.age_label || `A partir de ${source.minimum_age || 5} anos`,
+    minimum_age: Number(source.minimum_age ?? 5),
+    maximum_age: source.maximum_age == null ? null : Number(source.maximum_age),
+    age_label: source.age_label || `A partir de ${source.minimum_age ?? 5} anos`,
     price_cents: Number(source.price_cents),
     capacity: Number(capacity || source.capacity),
     status: 'open',
@@ -520,7 +538,7 @@ async function initAdmin() {
 
     root.innerHTML = `
       <header class="admin-topbar">
-        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.9.0</span></div>
+        <div><strong>Socializando</strong><span>Gestão de oficinas · V4.9.1</span></div>
         <div class="admin-topbar__actions"><a href="../#oficinas">Ver LP</a><button data-logout>Sair</button></div>
       </header>
 
@@ -544,7 +562,8 @@ async function initAdmin() {
               <label>Data<input name="eventDate" type="date" required /></label>
               <label>Início<input name="startTime" type="time" required /></label>
               <label>Fim<input name="endTime" type="time" required /></label>
-              <label>Idade mínima<input name="minimumAge" type="number" min="0" value="5" required /></label>
+              <label>Idade mínima<input name="minimumAge" type="number" min="0" max="18" value="5" required /></label>
+              <label>Idade máxima (opcional)<input name="maximumAge" type="number" min="0" max="18" placeholder="Sem limite máximo" /></label>
               <label>Valor (R$)<input name="priceReais" inputmode="decimal" value="45,00" required /></label>
               <label>Vagas<input name="capacity" type="number" min="1" value="15" required /></label>
               <button type="submit">Criar nova oficina</button>
@@ -632,7 +651,8 @@ async function initAdmin() {
                   <label>Data<input name="eventDate" type="date" value="${esc(summary.event_date)}" required /></label>
                   <label>Início<input name="startTime" type="time" value="${esc(String(summary.start_time||'').slice(0,5))}" required /></label>
                   <label>Fim<input name="endTime" type="time" value="${esc(String(summary.end_time||'').slice(0,5))}" required /></label>
-                  <label>Idade mínima<input name="minimumAge" type="number" min="0" value="${summary.minimum_age}" required /></label>
+                  <label>Idade mínima<input name="minimumAge" type="number" min="0" max="18" value="${summary.minimum_age}" required /></label>
+                  <label>Idade máxima (opcional)<input name="maximumAge" type="number" min="0" max="18" value="${summary.maximum_age ?? ''}" placeholder="Sem limite máximo" /></label>
                   <label>Valor (R$)<input name="priceReais" value="${priceInput(summary.price_cents)}" required /></label>
                   <label>Capacidade<input name="capacity" type="number" min="${summary.occupiedCount || 1}" value="${summary.capacity}" required /></label>
                   <label>Status
@@ -757,6 +777,7 @@ async function initAdmin() {
           startTime:data.get('startTime'),
           endTime:data.get('endTime'),
           minimumAge:data.get('minimumAge'),
+          maximumAge:data.get('maximumAge'),
           priceReais:data.get('priceReais'),
           capacity:data.get('capacity'),
         }), token);
@@ -819,6 +840,7 @@ async function initAdmin() {
             startTime:data.get('startTime'),
             endTime:data.get('endTime'),
             minimumAge:data.get('minimumAge'),
+            maximumAge:data.get('maximumAge'),
             priceReais:data.get('priceReais'),
             capacity:data.get('capacity'),
             status:data.get('status'),

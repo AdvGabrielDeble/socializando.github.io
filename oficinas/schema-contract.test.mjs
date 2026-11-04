@@ -202,3 +202,14 @@ test('archived workshops remain stored but are excluded from the public workshop
   assert.match(sql, /create\s+or\s+replace\s+function\s+public\.list_public_workshops\(\)[\s\S]*?where\s+w\.status\s+in\s*\(\s*'open'\s*,\s*'sold_out'\s*\)/i);
   assert.doesNotMatch(sql, /where\s+w\.status\s+in\s*\([^)]*'archived'/i);
 });
+
+
+test('schema supports optional maximum age and validates registration at the database layer', () => {
+  assert.match(sql,/maximum_age\s+integer/i);
+  assert.match(sql,/workshops_maximum_age_valid/i);
+  assert.match(sql,/create\s+or\s+replace\s+function\s+public\.enforce_workshop_registration_age\(\)/i);
+  assert.match(sql,/security\s+invoker/i);
+  assert.match(sql,/new\.child_age\s*>\s*v_maximum/i);
+  assert.match(sql,/registrations_enforce_age_range[\s\S]*?before insert or update of child_age, workshop_id/i);
+  assert.match(sql,/revoke all on function public\.enforce_workshop_registration_age\(\) from public, anon, authenticated/i);
+});

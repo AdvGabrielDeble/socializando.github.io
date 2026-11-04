@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { groupWorkshopSessions, buildWorkshopCardModel, buildPublicSessionCards, getModuleState, getExperienceTheme, buildWorkshopExperienceHtml, buildWorkshopWhatsAppMessage, buildWorkshopWhatsAppUrl } from './public.js';
+import { getSessionAgeBounds, groupWorkshopSessions, buildWorkshopCardModel, buildPublicSessionCards, getModuleState, getExperienceTheme, buildWorkshopExperienceHtml, buildWorkshopWhatsAppMessage, buildWorkshopWhatsAppUrl } from './public.js';
 
 const sessions = [
   {
@@ -184,4 +184,20 @@ test('gendered workshop targeting is absent from the public workshop sources', (
     readFileSync(new URL('./seed.sql', import.meta.url), 'utf8'),
   ].join('\n');
   assert.doesNotMatch(sources, /para\s+(?:meninos|meninas)/i);
+});
+
+
+test('registration dialog age bounds honor Inventores 8–12 and Gloss 7+', () => {
+  assert.deepEqual(getSessionAgeBounds({minimumAge:8,ageLabel:'De 8 a 12 anos'}), {
+    minimum:8,maximum:12
+  });
+  assert.deepEqual(getSessionAgeBounds({minimumAge:7,ageLabel:'A partir de 7 anos'}), {
+    minimum:7,maximum:18
+  });
+  assert.deepEqual(getSessionAgeBounds({minimumAge:5,ageLabel:'A partir de 5 anos'}), {
+    minimum:5,maximum:18
+  });
+  const source=readFileSync(new URL('./public.js',import.meta.url),'utf8');
+  assert.match(source,/ageInput\.min = String\(ageBounds\.minimum\)/);
+  assert.match(source,/ageInput\.max = String\(ageBounds\.maximum\)/);
 });

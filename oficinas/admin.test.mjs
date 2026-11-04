@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { summarizeWorkshops, canConfirmRegistration, canDeleteRegistration, filterWorkshopSummaries, buildNewSession, buildNewWorkshop, buildWorkshopPatch, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
+import { summarizeWorkshops, canConfirmRegistration, canDeleteRegistration, filterWorkshopSummaries, buildNewSession, buildNewWorkshop, buildWorkshopPatch, buildWorkshopAgeRange, adjustCapacity, filterRegistrations, getCanonicalArtworkRule, buildArtworkStoragePath, validateArtworkFileMeta, buildPublicArtworkUrl, createAdminApi, buildAdminRegistrationWhatsAppMessage, buildAdminRegistrationWhatsAppUrl } from './admin.js';
 
 const workshops = [
   { id:'w1', experience_key:'expedicao-jurassica', slug:'expedicao-jurassica-2026-10-10', title:'Expedição Jurássica', event_date:'2026-10-10', start_time:'14:00:00', end_time:'15:30:00', minimum_age:5, age_label:'A partir de 5 anos', price_cents:5000, capacity:15, status:'open', image_url:'jurassica-10-out.jpeg' },
@@ -229,6 +229,7 @@ test('buildNewWorkshop creates a fully manageable new experience', () => {
   assert.equal(result.start_time, '14:00');
   assert.equal(result.end_time, '15:30');
   assert.equal(result.minimum_age, 6);
+  assert.equal(result.maximum_age, null);
   assert.equal(result.age_label, 'A partir de 6 anos');
   assert.equal(result.price_cents, 6500);
   assert.equal(result.capacity, 18);
@@ -264,6 +265,7 @@ test('buildWorkshopPatch edits operational fields without changing experience id
     start_time: '16:00',
     end_time: '17:30',
     minimum_age: 5,
+    maximum_age: null,
     age_label: 'A partir de 5 anos',
     price_cents: 5500,
     capacity: 20,
@@ -544,4 +546,43 @@ test('dashboard headline totals exclude archived turmas', () => {
   assert.match(source, /const archivedSummaries = filterWorkshopSummaries\(summaries, 'archived'\)/);
   assert.match(source, /totalAvailable = activeSummaries\.reduce/);
   assert.match(source, /Turmas ativas/);
+});
+
+
+test('new age range with upper limit is persisted as structured values', () => {
+  assert.deepEqual(buildWorkshopAgeRange(8,12), {
+    minimum_age:8,
+    maximum_age:12,
+    age_label:'De 8 a 12 anos',
+  });
+  assert.deepEqual(buildWorkshopAgeRange(7,''), {
+    minimum_age:7,
+    maximum_age:null,
+    age_label:'A partir de 7 anos',
+  });
+  assert.throws(() => buildWorkshopAgeRange(8,7), /idade máxima/i);
+  assert.throws(() => buildWorkshopAgeRange(8,19), /idade máxima/i);
+  const patch=buildWorkshopPatch({
+    title:'Fábrica de Inventores', eventDate:'2026-12-05',
+    startTime:'14:00',endTime:'16:00',
+    minimumAge:'8',maximumAge:'12',capacity:10,priceReais:'55',status:'open'
+  });
+  assert.equal(patch.maximum_age,12);
+  assert.equal(patch.age_label,'De 8 a 12 anos');
+});
+
+test('opening a new turma preserves source minimum and maximum ages', () => {
+  const cloned=buildNewSession({
+    ...workshops[0],minimum_age:8,maximum_age:12,age_label:'De 8 a 12 anos'
+  }, {eventDate:'2026-12-12',startTime:'14:00',endTime:'16:00',capacity:10});
+  assert.equal(cloned.minimum_age,8);
+  assert.equal(cloned.maximum_age,12);
+  assert.equal(cloned.age_label,'De 8 a 12 anos');
+});
+
+test('admin has maximum-age controls for creating and editing workshops', () => {
+  const source=readFileSync(new URL('./admin.js',import.meta.url),'utf8');
+  assert.match(source,/Idade máxima \(opcional\)/);
+  assert.match(source,/maximumAge:data\.get\('maximumAge'\)/);
+  assert.match(source,/value="\$\{summary\.maximum_age \?\? ''\}"/);
 });

@@ -5,6 +5,16 @@ import { OFICINAS_CONFIG } from './config.js?v=472';
 const money = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
+export function getSessionAgeBounds(session = {}) {
+  const minimum = Number(session.minimumAge ?? 5);
+  const range = String(session.ageLabel || '').match(/\b(\d{1,2})\s*(?:a|até|[-–])\s*(\d{1,2})\s+anos?\b/i);
+  const maximum = range ? Number(range[2]) : 18;
+  return {
+    minimum: Number.isInteger(minimum) && minimum >= 0 ? minimum : 5,
+    maximum: Number.isInteger(maximum) && maximum <= 18 ? maximum : 18,
+  };
+}
+
 export function groupWorkshopSessions(sessions = []) {
   const sorted = [...sessions].sort((a, b) => `${a.eventDate}T${a.startTime || '00:00'}`.localeCompare(`${b.eventDate}T${b.startTime || '00:00'}`));
   const groups = new Map();
@@ -366,7 +376,11 @@ async function initBrowserModule() {
     if (!activeSession) return;
     modal.querySelector('[data-workshop-title]').textContent = activeSession.title;
     modal.querySelector('[data-workshop-session]').textContent = `${dateFormatter.format(new Date(`${activeSession.eventDate}T12:00:00Z`))} · ${String(activeSession.startTime).slice(0,5)} às ${String(activeSession.endTime).slice(0,5)} · ${activeSession.ageLabel}`;
-    modal.querySelector('[name="childAge"]').min = String(activeSession.minimumAge || 5);
+    const ageInput = modal.querySelector('[name="childAge"]');
+    const ageBounds = getSessionAgeBounds(activeSession);
+    ageInput.min = String(ageBounds.minimum);
+    ageInput.max = String(ageBounds.maximum);
+    ageInput.value = '';
     modal.showModal();
   });
 
