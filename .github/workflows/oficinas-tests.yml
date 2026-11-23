@@ -19,6 +19,7 @@ on:
       - feature/oficinas-faixas-etarias-2026-11-03
       - feature/fabrica-de-inventores-2026-12-05
       - feature/oficinas-novembro-2026
+      - feature/inventores-2026-11-28-robotica
   workflow_dispatch:
 
 jobs:

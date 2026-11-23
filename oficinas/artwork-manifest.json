@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-03",
+  "version": "2026-11-23",
   "policy": "A arte-fonte aprovada não pode ser redesenhada, recortada, recolorida ou reinterpretada. Quando a entrega web exigir otimização, a cópia publicada deve preservar integralmente a composição e as dimensões, documentar a origem e o SHA-256 e permanecer imutável após aprovação.",
   "artworks": [
     {
@@ -85,8 +85,20 @@
       "mime_type": "image/jpeg",
       "event_date": "2026-12-05",
       "status": "user-supplied-original-published-2026-11-03"
+    },
+    {
+      "experience_key": "fabrica-de-inventores",
+      "source_filename": "ROBÓTICA.webp",
+      "target_path": "assets/oficinas/fabrica-de-inventores-2026-11-28.webp",
+      "sha256": "0753f6028c5dc256d56fa3573fcd05a7cf89379fe795fc348bccfb3e5dd530cf",
+      "bytes": 212292,
+      "width": 1122,
+      "height": 1402,
+      "mime_type": "image/webp",
+      "event_date": "2026-11-28",
+      "status": "user-supplied-original-2026-11-23"
     }
   ],
   "preview_bundle": "Socializando_V4.6.0_Preview_Oficinas_Integradas.zip",
-  "notes": "Oficinas de 14, 21 e 28 de novembro: artes JPEG originais fornecidas pelo usuário, publicadas sem recorte nem recompressão; três turmas independentes no banco e preços específicos por turma. Manter histórico anterior e status arquivado. Fábrica de Inventores 05/12: original JPEG sem alterações, 10 vagas, 8 anos+, 14h-16h e R$55. Preservar as demais oficinas."
+  "notes": "Oficinas de 14, 21 e 28 de novembro: artes JPEG originais fornecidas pelo usuário, publicadas sem recorte nem recompressão; três turmas independentes no banco e preços específicos por turma. Manter histórico anterior e status arquivado. Fábrica de Inventores 05/12: original JPEG sem alterações, 10 vagas, 8 anos+, 14h-16h e R$55. Preservar as demais oficinas. Robótica 28/11/2026 adicionada como turma distinta (14h-16h, R$60, 10 vagas, a partir de 8 anos), com arte WebP original enviada pelo usuário. Não alterar turma 05/12."
 }
